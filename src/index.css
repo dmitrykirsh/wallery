@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+
+  --color-bg: #15131a;
+  --color-surface: #1d1a23;
+  --color-surface-2: #26212e;
+  --color-surface-3: #322b3a;
+  --color-border: #3a3244;
+  --color-border-soft: #241f2b;
+
+  --color-ink: #f1ecf5;
+  --color-ink-muted: #a89dba;
+  --color-ink-faint: #756a87;
+
+  --color-accent: #e3a458;
+  --color-accent-2: #d98a8a;
+  --color-accent-soft: #4a3a28;
+  --color-accent-ink: #1c1408;
+
+  --color-favorite: #e2637d;
+}
+
+:root {
+  --gradient-accent: linear-gradient(135deg, #e3a458 0%, #d98a8a 100%);
+}
+
+html,
+body {
+  background:
+    radial-gradient(1200px 700px at 15% -10%, rgba(227, 164, 88, 0.08), transparent 60%),
+    radial-gradient(1000px 800px at 100% 0%, rgba(157, 122, 216, 0.07), transparent 55%),
+    var(--color-bg);
+  color: var(--color-ink);
+}
+
+* {
+  scrollbar-color: var(--color-surface-3) transparent;
+  scrollbar-width: thin;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Liquid-glass surfaces, modeled on macOS/iOS translucent materials: a
+ * layered specular gradient (light catching the top of the pane) sitting
+ * over a saturated blur of whatever scrolls underneath, with a bright
+ * hairline edge and a soft contact shadow to lift it off the page. Two
+ * weights — lighter for small floating chrome, stronger for panels/modals
+ * that need to stay legible over busy content. */
+.glass {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 35%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(40, 36, 48, 0.42);
+  backdrop-filter: blur(28px) saturate(200%) brightness(1.08);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  /* Blurred surfaces are expensive to repaint every scroll frame — pin each
+     one to its own compositor layer so scrolling underneath them stays smooth. */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.glass-strong {
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 30%, rgba(255, 255, 255, 0.01) 100%),
+    rgba(24, 22, 29, 0.92);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong {
+    background: var(--color-surface-2);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-150 select-none cursor-pointer;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--color-ink-muted);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)), rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.chip:hover {
+  color: var(--color-ink);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03)), rgba(255, 255, 255, 0.06);
+}
+
+.chip[data-active="true"] {
+  color: var(--color-accent-ink);
+  background: var(--gradient-accent);
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 12px rgba(227, 164, 88, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
