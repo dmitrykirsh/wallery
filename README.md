@@ -13,26 +13,26 @@ A fast, modern desktop wallpaper browser for [Wallhaven](https://wallhaven.cc), 
 
 A rotating hero banner (Hot / Top list / Latest / your own custom tags) and a personalized "Recommended for you" row based on your favorites and search history, plus an endless feed of wallpapers grouped by tag.
 
-![Home page](<img width="1645" height="1042" alt="image" src="https://github.com/user-attachments/assets/5baf0a7b-cdee-46da-96ca-6846a17ee34a" />)
+![Home page](https://github.com/user-attachments/assets/5baf0a7b-cdee-46da-96ca-6846a17ee34a)
 
 ### Search like on Wallhaven itself
 
 The same resolution, aspect ratio, color, and sorting filters as the original site — including "At least" / "Exactly" resolution matching and grouped aspect ratios.
 
-![Resolution filter](<img width="1644" height="1042" alt="image" src="https://github.com/user-attachments/assets/c5b2b73e-cf9e-4146-9e01-42fda5786eea" />)
-![Search results](<img width="1644" height="1045" alt="image" src="https://github.com/user-attachments/assets/cacb7bb5-4c49-4fd2-b546-a1b415a0d190" />)
+![Resolution filter](https://github.com/user-attachments/assets/c5b2b73e-cf9e-4146-9e01-42fda5786eea)
+![Search results](https://github.com/user-attachments/assets/cacb7bb5-4c49-4fd2-b546-a1b415a0d190)
 
 ### Crop to your exact screen
 
 Open any wallpaper, pick your monitor's resolution (auto-detected) or a custom size, pan and zoom to frame it, then save the crop or set it as your wallpaper directly.
 
-![Wallpaper detail with crop tool](<img width="1647" height="1044" alt="image" src="https://github.com/user-attachments/assets/2a462faa-2187-43d9-9739-368a17a55fa9" />)
+![Wallpaper detail with crop tool](https://github.com/user-attachments/assets/2a462faa-2187-43d9-9739-368a17a55fa9)
 
 ### Automatic wallpaper slideshow
 
 Set up rules — by tag, source, resolution, color, orientation — and Wallery rotates your wallpaper on a schedule, even per monitor, while running quietly in the tray.
 
-![Slideshow rules](<img width="771" height="929" alt="image" src="https://github.com/user-attachments/assets/ca08da86-b1e8-4739-b44e-bf1d62c2b66f" />)
+![Slideshow rules](https://github.com/user-attachments/assets/ca08da86-b1e8-4739-b44e-bf1d62c2b66f)
 
 Also included: favorites, search history, a multi-language UI (RU / EN / ES / FR / DE / ZH), launch-on-startup, and a system tray icon that keeps the slideshow running when the window is closed.
 
