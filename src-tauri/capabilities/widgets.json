@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "widgets",
+  "description": "Capability for desktop widget overlay windows (clock, date, weather) — deliberately minimal, no file/dialog/autostart access. Everything else (click-through, positioning, closing) is driven remotely by the main window.",
+  "windows": ["widget-*"],
+  "permissions": ["core:window:allow-start-dragging", "core:event:allow-listen", "core:event:allow-unlisten"]
+}

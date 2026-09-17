@@ -67,12 +67,13 @@ export async function quitApp(): Promise<void> {
   await invoke("quit_app");
 }
 
-export async function cropWallpaper(
+/** Saves an already cropped, resized, and color-adjusted image — baked in
+ * client-side via canvas (see EditPanel) — either as the desktop wallpaper
+ * or to a folder. `dataBase64` is the raw base64 payload of a JPEG blob,
+ * no `data:...;base64,` prefix. */
+export async function saveEditedWallpaper(
   id: string,
-  url: string,
-  crop: CropRect,
-  targetWidth: number,
-  targetHeight: number,
+  dataBase64: string,
   monitor: string | null,
   mode: "set" | "save",
   saveFolder: string | null,
@@ -80,7 +81,7 @@ export async function cropWallpaper(
   if (!isTauri()) {
     throw new Error(t("error.tauriOnlyCrop"));
   }
-  return await invoke<string>("crop_wallpaper", { id, url, crop, targetWidth, targetHeight, monitor, mode, saveFolder });
+  return await invoke<string>("save_edited_wallpaper", { id, dataBase64, monitor, mode, saveFolder });
 }
 
 export async function openInBrowser(url: string): Promise<void> {

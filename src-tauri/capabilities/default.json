@@ -7,6 +7,16 @@
     "core:default",
     "opener:default",
     "dialog:default",
-    "autostart:default"
+    "autostart:default",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-available-monitors",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-outer-position",
+    "core:window:allow-set-size",
+    "core:event:allow-emit-to",
+    "fs:allow-write-text-file",
+    "fs:allow-read-text-file"
   ]
 }

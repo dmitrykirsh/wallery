@@ -108,47 +108,26 @@ struct MonitorInfo {
     height: i32,
 }
 
-#[derive(serde::Deserialize, Clone, Copy)]
-struct CropRect {
-    x: u32,
-    y: u32,
-    width: u32,
-    height: u32,
-}
-
-/// Downloads a wallpaper, crops it to `crop` (in the source image's own pixel
-/// coordinates) and resizes to exactly `target_width`x`target_height`, then
-/// either sets it as the wallpaper (already an exact resolution match, so
-/// "fill" never has to scale or letterbox it) or saves it to `save_folder`.
+/// Saves an image already cropped, resized, and color-adjusted client-side
+/// (via a canvas 2D context, so the crop area and color filters both bake
+/// into the pixels exactly as previewed), then either sets it as the
+/// wallpaper (already an exact resolution match, so "fill" never has to
+/// scale or letterbox it) or saves it to `save_folder`. `data_base64` is a
+/// raw base64-encoded JPEG payload, no `data:...;base64,` prefix.
 #[tauri::command]
-async fn crop_wallpaper(
+async fn save_edited_wallpaper(
     id: String,
-    url: String,
-    crop: CropRect,
-    target_width: u32,
-    target_height: u32,
+    data_base64: String,
     monitor: Option<String>,
     mode: String,
     save_folder: Option<String>,
 ) -> Result<String, String> {
-    let (bytes, _extension) = download_bytes(&url).await?;
-    let img = image::load_from_memory(&bytes).map_err(|e| format!("Failed to decode image: {e}"))?;
-
-    let (img_w, img_h) = (img.width(), img.height());
-    let x = crop.x.min(img_w.saturating_sub(1));
-    let y = crop.y.min(img_h.saturating_sub(1));
-    let w = crop.width.min(img_w - x).max(1);
-    let h = crop.height.min(img_h - y).max(1);
-
-    let cropped = img.crop_imm(x, y, w, h);
-    let resized = cropped.resize_exact(target_width.max(1), target_height.max(1), image::imageops::FilterType::Lanczos3);
+    let bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &data_base64)
+        .map_err(|e| format!("Failed to decode image data: {e}"))?;
 
     let mut path = cache_dir()?;
-    path.push(format!("{id}-crop.jpg"));
-    resized
-        .to_rgb8()
-        .save_with_format(&path, image::ImageFormat::Jpeg)
-        .map_err(|e| format!("Failed to save cropped image: {e}"))?;
+    path.push(format!("{id}-edit.jpg"));
+    std::fs::write(&path, &bytes).map_err(|e| format!("Failed to save image: {e}"))?;
 
     if mode == "save" {
         let dir = match save_folder {
@@ -161,7 +140,7 @@ async fn crop_wallpaper(
         };
         std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create folder: {e}"))?;
         let mut dest = dir;
-        dest.push(format!("wallhaven-{id}-crop.jpg"));
+        dest.push(format!("wallhaven-{id}-edit.jpg"));
         std::fs::copy(&path, &dest).map_err(|e| format!("Failed to copy image: {e}"))?;
         return Ok(dest.to_string_lossy().to_string());
     }
@@ -214,6 +193,37 @@ async fn list_monitors() -> Result<Vec<MonitorInfo>, String> {
 #[tauri::command]
 fn quit_app(app: tauri::AppHandle) {
     app.exit(0);
+}
+
+/// Drops a widget window to the bottom of the Z-order — below every other
+/// top-level window, but still above the desktop wallpaper/icons layer
+/// (which is always behind everything regardless). Unlike reparenting into
+/// the desktop's WorkerW, this never touches the window's parent, so it
+/// can't break the layered/transparent rendering that trick did. It's a
+/// one-shot placement, not a standing "always at the back" rule — call it
+/// again (e.g. after the window is briefly focused) if something bumps it
+/// forward.
+#[cfg(target_os = "windows")]
+#[tauri::command]
+fn send_widget_to_back(app: tauri::AppHandle, label: String) -> Result<(), String> {
+    use tauri::Manager;
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, HWND_BOTTOM, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE};
+
+    let window = app.get_webview_window(&label).ok_or_else(|| "Widget window not found".to_string())?;
+    let raw_hwnd = window.hwnd().map_err(|e| format!("Failed to get window handle: {e}"))?;
+    let target = HWND(raw_hwnd.0);
+
+    unsafe {
+        SetWindowPos(target, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE).map_err(|e| format!("SetWindowPos failed: {e}"))?;
+    }
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+#[tauri::command]
+fn send_widget_to_back(_app: tauri::AppHandle, _label: String) -> Result<(), String> {
+    Ok(())
 }
 
 #[cfg(target_os = "windows")]
@@ -333,8 +343,19 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
-        .invoke_handler(tauri::generate_handler![api_get, set_wallpaper, save_wallpaper, crop_wallpaper, list_monitors, quit_app, set_tray_labels, fetch_image_data_url])
+        .invoke_handler(tauri::generate_handler![
+            api_get,
+            set_wallpaper,
+            save_wallpaper,
+            save_edited_wallpaper,
+            list_monitors,
+            quit_app,
+            set_tray_labels,
+            fetch_image_data_url,
+            send_widget_to_back
+        ])
         .setup(|app| {
             // English fallback until the frontend's first setTrayLabels call
             // (moments after launch) replaces it with the active UI language.

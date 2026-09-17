@@ -7,6 +7,7 @@ import type { WallpaperStyle, MonitorInfo } from "../lib/tauri";
 import type { Category, Purity } from "../lib/types";
 import { useMonitors } from "../lib/useMonitors";
 import { useLang } from "../lib/LangContext";
+import Select from "./Select";
 
 const STYLES: WallpaperStyle[] = ["fill", "fit", "stretch", "span", "center", "tile"];
 const ORIENTATIONS: Orientation[] = ["any", "landscape", "portrait"];
@@ -54,7 +55,7 @@ export default function SlideshowModal({ rules, apiKey, nsfwAllowed, sketchyAllo
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.18 }}
-        className="glass-strong max-h-[88vh] w-full max-w-xl overflow-y-auto rounded-3xl p-6"
+        className="glass-strong max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6"
       >
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
@@ -247,19 +248,11 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                     <label className="mb-1 block text-sm" style={{ color: "var(--color-ink-muted)" }}>
                       {t("filter.resolution")}
                     </label>
-                    <select
+                    <Select
                       value={rule.resolution ?? ""}
-                      onChange={(e) => onChange({ resolution: e.target.value || null })}
-                      className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                      style={{ borderColor: "var(--color-border)", background: "var(--color-surface)", color: "var(--color-ink)" }}
-                    >
-                      <option value="">{t("action.any")}</option>
-                      {RESOLUTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => onChange({ resolution: v || null })}
+                      options={[{ value: "", label: t("action.any") }, ...RESOLUTIONS.map((r) => ({ value: r, label: r }))]}
+                    />
                   </div>
                 )}
 
@@ -267,18 +260,11 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                   <label className="mb-1 block text-sm" style={{ color: "var(--color-ink-muted)" }}>
                     {t("slideshow.interval")}
                   </label>
-                  <select
+                  <Select
                     value={rule.intervalMinutes}
-                    onChange={(e) => onChange({ intervalMinutes: Number(e.target.value) })}
-                    className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-                    style={{ borderColor: "var(--color-border)", background: "var(--color-surface)", color: "var(--color-ink)" }}
-                  >
-                    {INTERVAL_OPTIONS.map((o) => (
-                      <option key={o.minutes} value={o.minutes}>
-                        {t(`interval.${o.label}` as const)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => onChange({ intervalMinutes: v })}
+                    options={INTERVAL_OPTIONS.map((o) => ({ value: o.minutes, label: t(`interval.${o.label}` as const) }))}
+                  />
                 </div>
               </div>
 

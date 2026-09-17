@@ -4,11 +4,19 @@ import HeroCarousel from "../components/HeroCarousel";
 import TagCloud from "../components/TagCloud";
 import TagRowFeed from "../components/TagRowFeed";
 import WallpaperRow from "../components/WallpaperRow";
+import type { ContextMenuAction } from "../components/ContextMenu";
 import { searchWallpapers } from "../lib/api";
 import { defaultFilters } from "../lib/filters";
 import { dedupeById } from "../lib/dedupe";
-import { favoriteTags } from "../lib/favorites";
-import { getSearchHistory } from "../lib/searchHistory";
+import {
+  pickRecommendationTerms,
+  pickSortAndPage,
+  filterExcluded,
+  preferUnseen,
+  recordShown,
+  excludeWallpaper,
+  bumpTagWeight,
+} from "../lib/recommendationEngine";
 import { useLang } from "../lib/LangContext";
 import type { HeroMode, HeroSettings } from "../lib/heroSettings";
 import type { RecommendationSettings } from "../lib/recommendationSettings";
@@ -55,34 +63,6 @@ function heroFilters(h: HeroSettings): Filters {
   return { ...defaultFilters(), purities, sorting: "toplist", topRange: "1w" };
 }
 
-const REC_TERM_COUNT = 5;
-
-/** Recommendation terms: favorite tags (the most persistent signal of taste,
- * since they accumulate across every session) plus a random sample of the
- * *entire* search history — not just the most recent few, which would bury
- * older interests the moment the user searches something new right now. */
-function recommendationTerms(): string[] {
-  const favTags = favoriteTags().slice(0, 3);
-  const historyPool = getSearchHistory().filter((h) => !favTags.includes(h));
-  const pickedHistory: string[] = [];
-  const pool = [...historyPool];
-  while (pickedHistory.length < 3 && pool.length > 0) {
-    const idx = Math.floor(Math.random() * pool.length);
-    pickedHistory.push(pool.splice(idx, 1)[0]);
-  }
-  return [...new Set([...favTags, ...pickedHistory])].slice(0, REC_TERM_COUNT);
-}
-
-/** When the user has turned on custom recommendation tags and picked at
- * least one, those replace the auto-computed favorites+history terms —
- * otherwise recommendations behave exactly as before. */
-function resolveRecommendationTerms(recSettings: RecommendationSettings): string[] {
-  if (recSettings.useCustomTags && recSettings.customTags.length > 0) {
-    return recSettings.customTags.slice(0, REC_TERM_COUNT);
-  }
-  return recommendationTerms();
-}
-
 /** Concatenating each term's whole page (term1 x10, then term2 x10, ...)
  * reads like separate blocks; interleaving mixes them into one feed. */
 function interleave<T>(lists: T[][]): T[] {
@@ -97,6 +77,7 @@ function interleave<T>(lists: T[][]): T[] {
 interface TermPaging {
   page: number;
   lastPage: number;
+  sorting: Sorting;
 }
 
 // Fetching only a handful of pages meant the hero kept reshuffling through
@@ -230,7 +211,7 @@ export default function Home({
   useEffect(() => {
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    const terms = resolveRecommendationTerms(recommendationSettings);
+    const terms = pickRecommendationTerms(recommendationSettings);
     recPagingRef.current = {};
     setRecTerms(terms);
     setRecWallpapers([]);
@@ -242,10 +223,11 @@ export default function Home({
     const purities = { sfw: true, sketchy: sketchyAllowed, nsfw: nsfwAllowed };
 
     function attempt() {
+      const picks = terms.map((term) => ({ term, ...pickSortAndPage() }));
       Promise.all(
-        terms.map((term) =>
-          searchWallpapers({ ...defaultFilters(), query: term, purities, sorting: "relevance" }, apiKey, 1)
-            .then((res) => ({ ok: true as const, term, res }))
+        picks.map(({ term, sorting, page }) =>
+          searchWallpapers({ ...defaultFilters(), query: term, purities, sorting }, apiKey, page)
+            .then((res) => ({ ok: true as const, term, sorting, page, res }))
             .catch(() => ({ ok: false as const, term })),
         ),
       ).then((results) => {
@@ -258,8 +240,11 @@ export default function Home({
           retryTimer = setTimeout(attempt, 6000);
           return;
         }
-        for (const r of succeeded) recPagingRef.current[r.term] = { page: 1, lastPage: r.res.meta.last_page };
-        setRecWallpapers(dedupeById(interleave(succeeded.map((r) => r.res.data))));
+        for (const r of succeeded) recPagingRef.current[r.term] = { page: r.page, lastPage: r.res.meta.last_page, sorting: r.sorting };
+        const merged = filterExcluded(dedupeById(interleave(succeeded.map((r) => r.res.data))));
+        const shown = preferUnseen(merged);
+        recordShown(shown.map((w) => w.id));
+        setRecWallpapers(shown);
         setRecLoading(false);
       });
     }
@@ -283,19 +268,50 @@ export default function Home({
     const purities = { sfw: true, sketchy: sketchyAllowed, nsfw: nsfwAllowed };
     Promise.all(
       pending.map((term) => {
-        const next = recPagingRef.current[term].page + 1;
-        return searchWallpapers({ ...defaultFilters(), query: term, purities, sorting: "relevance" }, apiKey, next)
+        const paging = recPagingRef.current[term];
+        const next = paging.page + 1;
+        return searchWallpapers({ ...defaultFilters(), query: term, purities, sorting: paging.sorting }, apiKey, next)
           .then((res) => {
-            recPagingRef.current[term] = { page: next, lastPage: res.meta.last_page };
+            recPagingRef.current[term] = { ...paging, page: next, lastPage: res.meta.last_page };
             return res.data;
           })
           .catch(() => []);
       }),
     )
       .then((results) => {
-        setRecWallpapers((prev) => dedupeById([...prev, ...interleave(results)]));
+        const fresh = filterExcluded(interleave(results));
+        recordShown(fresh.map((w) => w.id));
+        setRecWallpapers((prev) => dedupeById([...prev, ...fresh]));
       })
       .finally(() => setRecLoadingMore(false));
+  }
+
+  function recommendationContextMenu(wallpaper: Wallpaper): ContextMenuAction[] {
+    return [
+      {
+        label: t("menu.recommendMore"),
+        onClick: () => {
+          bumpTagWeight(wallpaper, 2);
+          onToast(t("toast.recommendMore"));
+        },
+      },
+      {
+        label: t("menu.recommendLess"),
+        onClick: () => {
+          bumpTagWeight(wallpaper, -2);
+          onToast(t("toast.recommendLess"));
+        },
+      },
+      {
+        label: t("menu.dontRecommend"),
+        danger: true,
+        onClick: () => {
+          excludeWallpaper(wallpaper);
+          setRecWallpapers((prev) => prev.filter((w) => w.id !== wallpaper.id));
+          onToast(t("toast.dontRecommend"));
+        },
+      },
+    ];
   }
 
   const heroLoading = hero.length === 0;
@@ -344,6 +360,7 @@ export default function Home({
           loading={recLoading}
           loadingMore={recLoadingMore}
           onReachEnd={loadMoreRecommendations}
+          contextMenuActions={recommendationContextMenu}
           isFavorite={isFavorite}
           onOpen={onOpen}
           onToggleFavorite={onToggleFavorite}

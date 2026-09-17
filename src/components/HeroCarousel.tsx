@@ -12,7 +12,7 @@ interface Props {
   onToast: (message: string) => void;
 }
 
-const TILE_COUNT = 5;
+const TILE_COUNT = 9;
 
 // A fixed grid — cell positions never move or resize. Only which wallpaper
 // is shown in each cell changes over time, so the collage stays visually
@@ -21,16 +21,32 @@ const BIG_STYLE: React.CSSProperties = { gridColumn: "1 / 3", gridRow: "1 / 3" }
 const SMALL_SLOTS: React.CSSProperties[] = [
   { gridColumn: "3 / 4", gridRow: "1 / 2" },
   { gridColumn: "4 / 5", gridRow: "1 / 2" },
+  { gridColumn: "5 / 6", gridRow: "1 / 2" },
+  { gridColumn: "6 / 7", gridRow: "1 / 2" },
   { gridColumn: "3 / 4", gridRow: "2 / 3" },
   { gridColumn: "4 / 5", gridRow: "2 / 3" },
+  { gridColumn: "5 / 6", gridRow: "2 / 3" },
+  { gridColumn: "6 / 7", gridRow: "2 / 3" },
 ];
 
 function tileSrc(w: Wallpaper): string {
   return w.thumbs.large;
 }
 
-function pickDistinct(pool: Wallpaper[], count: number, avoid: Set<string>): Wallpaper[] {
-  const candidates = pool.filter((w) => !avoid.has(w.id));
+// The big tile is the most visually prominent slot — a strongly vertical
+// (portrait) source image gets cropped brutally to fill its ~square area.
+// Biasing its pick toward landscape/square images keeps that crop sane;
+// portrait images still show up fine in the narrower small slots.
+function isLandscapeish(w: Wallpaper): boolean {
+  return w.dimension_x / w.dimension_y >= 1.15;
+}
+
+function pickDistinct(pool: Wallpaper[], count: number, avoid: Set<string>, preferLandscape = false): Wallpaper[] {
+  let candidates = pool.filter((w) => !avoid.has(w.id));
+  if (preferLandscape) {
+    const landscape = candidates.filter(isLandscapeish);
+    if (landscape.length >= count) candidates = landscape;
+  }
   const source = candidates.length >= count ? candidates : pool;
   const shuffled = [...source].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
@@ -74,7 +90,7 @@ function CollageTile({
   return (
     <div
       role="button"
-      className="group relative cursor-pointer overflow-hidden rounded-2xl"
+      className="tile-glass group relative cursor-pointer overflow-hidden rounded-2xl transition-[transform,box-shadow] duration-300 ease-out hover:z-10 hover:scale-[1.015] hover:shadow-[0_12px_36px_rgba(0,0,0,0.4)]"
       style={{ background: "var(--color-surface)", ...gridStyle }}
       onMouseEnter={() => setImage(wallpaper.thumbs.small)}
       onMouseLeave={() => setImage(null)}
@@ -89,9 +105,18 @@ function CollageTile({
           exit={{ opacity: 0 }}
           transition={{ duration: 1.1, ease: "easeInOut" }}
         >
-          <FallbackImage sources={sources} alt={wallpaper.id} className="h-full w-full object-cover" />
+          <FallbackImage
+            sources={sources}
+            alt={wallpaper.id}
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          />
         </motion.div>
       </AnimatePresence>
+      <div className="tile-sheen pointer-events-none absolute inset-0" />
+      <div className="tile-streaks pointer-events-none absolute inset-0">
+        <span />
+        <span />
+      </div>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/0 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
       <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex items-end justify-between gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <span className="rounded-md px-1.5 py-0.5 text-[11px] font-medium text-white/90" style={{ background: "rgba(0,0,0,0.45)" }}>
@@ -120,7 +145,10 @@ export default function HeroCarousel({ wallpapers, label, onOpen, onToast }: Pro
       return;
     }
     let cancelled = false;
-    const initial = pickDistinct(wallpapers, Math.min(TILE_COUNT, wallpapers.length), new Set());
+    const big = pickDistinct(wallpapers, 1, new Set(), true);
+    const smallCount = Math.min(TILE_COUNT - 1, Math.max(0, wallpapers.length - big.length));
+    const small = pickDistinct(wallpapers, smallCount, new Set(big.map((w) => w.id)));
+    const initial = [...big, ...small];
     Promise.all(initial.map((w) => preload(tileSrc(w)))).then(() => {
       if (!cancelled) setTiles(initial);
     });
@@ -153,7 +181,7 @@ export default function HeroCarousel({ wallpapers, label, onOpen, onToast }: Pro
       const current = tilesRef.current;
       const used = new Set(current.map((w) => w.id));
       if (i < current.length) used.delete(current[i].id);
-      const [next] = pickDistinct(wallpapers, 1, used);
+      const [next] = pickDistinct(wallpapers, 1, used, i === 0);
       if (next) {
         await preload(tileSrc(next));
         if (!cancelled && !pausedRef.current && i < tilesRef.current.length) {
@@ -177,12 +205,12 @@ export default function HeroCarousel({ wallpapers, label, onOpen, onToast }: Pro
   }, [wallpapers]);
 
   if (tiles.length === 0) {
-    return <div className="h-[560px] w-full animate-pulse" style={{ background: "var(--color-surface)" }} />;
+    return <div className="h-[380px] w-full animate-pulse" style={{ background: "var(--color-surface)" }} />;
   }
 
   return (
     <div
-      className="relative grid h-[560px] w-full grid-cols-4 grid-rows-2 gap-2"
+      className="relative grid h-[380px] w-full grid-cols-6 grid-rows-2 gap-2"
       onMouseEnter={() => (pausedRef.current = true)}
       onMouseLeave={() => (pausedRef.current = false)}
     >

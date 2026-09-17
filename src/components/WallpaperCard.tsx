@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Wallpaper } from "../lib/types";
 import WallpaperActions from "./WallpaperActions";
 import FallbackImage from "./FallbackImage";
+import ContextMenu, { type ContextMenuAction } from "./ContextMenu";
 import { useHoverBackground } from "../lib/HoverBackgroundContext";
 
 interface Props {
@@ -11,6 +13,10 @@ interface Props {
    * image's aspect ratio (used in horizontal filmstrip rows) instead of a
    * fixed width with a variable aspect-ratio height (used in the masonry grid). */
   fixedHeight?: number;
+  /** When provided, right-clicking the card shows these as a context menu
+   * instead of the browser's default one — used by the recommendation row
+   * for "не рекомендовать / реже / чаще". */
+  contextMenuActions?: (wallpaper: Wallpaper) => ContextMenuAction[];
   onOpen: (wallpaper: Wallpaper) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
   onToast: (message: string) => void;
@@ -18,18 +24,25 @@ interface Props {
 
 // A quiet purity indicator right on the card — muted, not the loud filter-pill
 // colors, since this needs to sit on every single thumbnail without shouting.
-const PURITY_BORDER: Record<string, { border: string; ring: string }> = {
-  sketchy: { border: "#8f7548", ring: "rgba(143,117,72,0.35)" },
-  nsfw: { border: "#8a5658", ring: "rgba(138,86,88,0.35)" },
+const PURITY_BORDER: Record<string, { border: string; glow: string }> = {
+  sketchy: { border: "#e0ab3f", glow: "rgba(224,171,63,0.55)" },
+  nsfw: { border: "#ef4b53", glow: "rgba(239,75,83,0.55)" },
 };
 
-export default function WallpaperCard({ wallpaper, favorite, fixedHeight, onOpen, onToggleFavorite, onToast }: Props) {
+export default function WallpaperCard({ wallpaper, favorite, fixedHeight, contextMenuActions, onOpen, onToggleFavorite, onToast }: Props) {
   const aspect = wallpaper.dimension_x / wallpaper.dimension_y;
   const sizeStyle = fixedHeight
     ? { height: fixedHeight, width: fixedHeight * aspect }
     : { aspectRatio: `${wallpaper.dimension_x} / ${wallpaper.dimension_y}`, width: "100%" };
   const { setImage } = useHoverBackground();
   const purityStyle = PURITY_BORDER[wallpaper.purity];
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  function handleContextMenu(e: React.MouseEvent) {
+    if (!contextMenuActions) return;
+    e.preventDefault();
+    setMenuPos({ x: e.clientX, y: e.clientY });
+  }
 
   return (
     <motion.button
@@ -40,10 +53,11 @@ export default function WallpaperCard({ wallpaper, favorite, fixedHeight, onOpen
       onClick={() => onOpen(wallpaper)}
       onMouseEnter={() => setImage(wallpaper.thumbs.small)}
       onMouseLeave={() => setImage(null)}
+      onContextMenu={handleContextMenu}
       className={`group relative block overflow-hidden rounded-2xl border text-left ${fixedHeight ? "shrink-0" : "mb-4 w-full"}`}
       style={{
         borderColor: purityStyle?.border ?? "var(--color-border-soft)",
-        boxShadow: purityStyle ? `inset 0 0 0 1px ${purityStyle.ring}` : undefined,
+        boxShadow: purityStyle ? `0 0 10px ${purityStyle.glow}, inset 0 0 0 1px ${purityStyle.border}` : undefined,
         background: "var(--color-surface)",
         ...sizeStyle,
       }}
@@ -86,6 +100,10 @@ export default function WallpaperCard({ wallpaper, favorite, fixedHeight, onOpen
       <div className="absolute bottom-2 left-2 right-2 flex flex-wrap justify-end gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         <WallpaperActions wallpaper={wallpaper} onToast={onToast} size="sm" />
       </div>
+
+      {contextMenuActions && (
+        <ContextMenu pos={menuPos} actions={contextMenuActions(wallpaper)} onClose={() => setMenuPos(null)} />
+      )}
     </motion.button>
   );
 }

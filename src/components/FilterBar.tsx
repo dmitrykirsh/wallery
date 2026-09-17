@@ -185,7 +185,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
   const purities: Purity[] = ["sfw", ...(sketchyAllowed ? (["sketchy"] as const) : []), ...(nsfwAllowed ? (["nsfw"] as const) : [])];
 
   return (
-    <div className="glass flex flex-wrap items-center gap-1.5 rounded-2xl p-2">
+    <div className="glass-strong flex flex-wrap items-center gap-1.5 rounded-2xl p-2">
       {(Object.keys(CATEGORY_KEY) as Category[]).map((cat) => (
         <motion.span
           key={cat}

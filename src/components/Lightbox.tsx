@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Wallpaper } from "../lib/types";
 import { getWallpaper } from "../lib/api";
 import WallpaperActions from "./WallpaperActions";
 import FallbackImage from "./FallbackImage";
-import CropPanel from "./CropPanel";
+import EditPanel from "./EditPanel";
 import { useLang } from "../lib/LangContext";
 import { isTauri, openInBrowser } from "../lib/tauri";
+
+const VIEW_MIN_ZOOM = 1;
+const VIEW_MAX_ZOOM = 5;
 
 interface Props {
   wallpaper: Wallpaper;
@@ -45,6 +48,59 @@ export default function Lightbox({
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(null);
   const [mainImageFailed, setMainImageFailed] = useState(false);
   const [copiedTagId, setCopiedTagId] = useState<number | null>(null);
+  const [editFilter, setEditFilter] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [viewZoom, setViewZoom] = useState(1);
+  const [viewPan, setViewPan] = useState({ x: 0, y: 0 });
+  const viewDragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
+  const viewContainerRef = useRef<HTMLDivElement>(null);
+
+  function clampViewPan(p: { x: number; y: number }, zoom: number) {
+    const el = viewContainerRef.current;
+    const maxX = el ? (el.clientWidth * (zoom - 1)) / 2 : 0;
+    const maxY = el ? (el.clientHeight * (zoom - 1)) / 2 : 0;
+    return { x: Math.min(maxX, Math.max(-maxX, p.x)), y: Math.min(maxY, Math.max(-maxY, p.y)) };
+  }
+
+  // Ctrl + wheel zooms the main preview in and out, keeping whatever point
+  // is under the cursor fixed in place — a plain wheel keeps scrolling the
+  // page as normal, only the modifier repurposes it for zoom.
+  function onViewWheel(e: React.WheelEvent) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const el = viewContainerRef.current;
+    const nextZoom = Math.min(VIEW_MAX_ZOOM, Math.max(VIEW_MIN_ZOOM, viewZoom * (1 - e.deltaY * 0.0015)));
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left - rect.width / 2;
+      const cy = e.clientY - rect.top - rect.height / 2;
+      setViewPan(
+        clampViewPan(
+          {
+            x: cx - (cx - viewPan.x) * (nextZoom / viewZoom),
+            y: cy - (cy - viewPan.y) * (nextZoom / viewZoom),
+          },
+          nextZoom,
+        ),
+      );
+    }
+    setViewZoom(nextZoom);
+  }
+
+  function onViewPointerDown(e: React.PointerEvent) {
+    if (viewZoom <= 1) return;
+    (e.target as Element).setPointerCapture(e.pointerId);
+    viewDragRef.current = { startX: e.clientX, startY: e.clientY, panX: viewPan.x, panY: viewPan.y };
+  }
+  function onViewPointerMove(e: React.PointerEvent) {
+    if (!viewDragRef.current) return;
+    const dx = e.clientX - viewDragRef.current.startX;
+    const dy = e.clientY - viewDragRef.current.startY;
+    setViewPan(clampViewPan({ x: viewDragRef.current.panX + dx, y: viewDragRef.current.panY + dy }, viewZoom));
+  }
+  function onViewPointerUp() {
+    viewDragRef.current = null;
+  }
 
   function toggleFavoriteTag(tagName: string) {
     const nowStarred = onToggleFavoriteTag(tagName);
@@ -67,6 +123,9 @@ export default function Lightbox({
     setImgLoaded(false);
     setResolvedSrc(null);
     setMainImageFailed(false);
+    setEditFilter("");
+    setViewZoom(1);
+    setViewPan({ x: 0, y: 0 });
     getWallpaper(wallpaper.id, apiKey)
       .then(setDetail)
       .catch(() => {});
@@ -91,7 +150,16 @@ export default function Lightbox({
         transition={{ duration: 0.2 }}
         className="glass-strong flex h-[92vh] w-[95vw] max-w-[1600px] flex-col overflow-hidden rounded-3xl md:flex-row"
       >
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: "var(--color-bg)" }}>
+        <div
+          ref={viewContainerRef}
+          className="relative flex flex-1 items-center justify-center overflow-hidden touch-none"
+          style={{ background: "var(--color-bg)", cursor: viewZoom > 1 ? (viewDragRef.current ? "grabbing" : "grab") : undefined }}
+          onWheel={onViewWheel}
+          onPointerDown={onViewPointerDown}
+          onPointerMove={onViewPointerMove}
+          onPointerUp={onViewPointerUp}
+          onPointerLeave={onViewPointerUp}
+        >
           {!imgLoaded && (
             <img
               src={detail.thumbs.large}
@@ -111,7 +179,13 @@ export default function Lightbox({
             }}
             onFailed={() => setMainImageFailed(true)}
             allowManualReload
+            draggable={false}
             className="relative z-10 h-full w-full object-contain"
+            style={{
+              filter: editFilter || undefined,
+              transform: viewZoom > 1 ? `translate(${viewPan.x}px, ${viewPan.y}px) scale(${viewZoom})` : undefined,
+              transition: viewDragRef.current ? "none" : "transform 0.1s ease-out",
+            }}
           />
 
           {hasMultiple && (
@@ -185,7 +259,7 @@ export default function Lightbox({
 
           <WallpaperActions wallpaper={detail} onToast={onToast} size="md" fill />
 
-          <div className="flex flex-wrap gap-1.5 overflow-y-auto">
+          <div className="flex shrink-0 flex-wrap gap-1.5">
             {(detail.tags ?? []).map((tag) => (
               <motion.span
                 key={tag.id}
@@ -251,19 +325,38 @@ export default function Lightbox({
             ))}
           </div>
 
-          {isTauri() &&
-            (resolvedSrc ? (
-              <CropPanel wallpaper={detail} src={resolvedSrc} onToast={onToast} />
-            ) : (
-              <div className="flex flex-col gap-2 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
-                <p className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
-                  {t("crop.title")}
-                </p>
-                <p className="text-xs" style={{ color: "var(--color-ink-faint)" }}>
-                  {mainImageFailed ? t("lightbox.notLoaded") : t("empty.loading")}
-                </p>
-              </div>
-            ))}
+          {isTauri() && (
+            <div className="flex shrink-0 flex-col gap-2 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+              <span
+                role="button"
+                onClick={() => setEditOpen((o) => !o)}
+                className="flex items-center justify-between text-xs font-medium uppercase tracking-wide"
+                style={{ color: "var(--color-ink-faint)" }}
+              >
+                {t("edit.title")}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{ transform: editOpen ? "rotate(180deg)" : undefined, transition: "transform 0.15s ease-out" }}
+                >
+                  <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+
+              {editOpen &&
+                (resolvedSrc ? (
+                  <EditPanel wallpaper={detail} src={resolvedSrc} onToast={onToast} onFilterChange={setEditFilter} />
+                ) : (
+                  <p className="text-xs" style={{ color: "var(--color-ink-faint)" }}>
+                    {mainImageFailed ? t("lightbox.notLoaded") : t("empty.loading")}
+                  </p>
+                ))}
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

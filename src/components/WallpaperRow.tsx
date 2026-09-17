@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Wallpaper } from "../lib/types";
 import WallpaperCard from "./WallpaperCard";
+import type { ContextMenuAction } from "./ContextMenu";
 
 const ROW_HEIGHT = 190;
 
@@ -13,6 +14,8 @@ interface Props {
   onReachEnd?: () => void;
   /** When set, the title becomes clickable (e.g. a "#tag" row title runs that tag's search). */
   onTitleClick?: () => void;
+  /** When set, right-clicking a card in this row shows these actions. */
+  contextMenuActions?: (wallpaper: Wallpaper) => ContextMenuAction[];
   isFavorite: (id: string) => boolean;
   onOpen: (wallpaper: Wallpaper, list: Wallpaper[]) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
@@ -26,6 +29,7 @@ export default function WallpaperRow({
   loadingMore,
   onReachEnd,
   onTitleClick,
+  contextMenuActions,
   isFavorite,
   onOpen,
   onToggleFavorite,
@@ -116,6 +120,7 @@ export default function WallpaperRow({
                 wallpaper={w}
                 favorite={isFavorite(w.id)}
                 fixedHeight={ROW_HEIGHT}
+                contextMenuActions={contextMenuActions}
                 onOpen={(wallpaper) => onOpen(wallpaper, wallpapers)}
                 onToggleFavorite={onToggleFavorite}
                 onToast={onToast}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import TopBar from "./components/TopBar";
 import SettingsModal from "./components/SettingsModal";
 import SlideshowModal from "./components/SlideshowModal";
+import WidgetsModal from "./components/WidgetsModal";
 import Toast from "./components/Toast";
 import Lightbox from "./components/Lightbox";
 import HoverBackdrop from "./components/HoverBackdrop";
@@ -9,6 +10,7 @@ import ScrollToTopButton from "./components/ScrollToTopButton";
 import Home from "./pages/Home";
 import Results from "./pages/Results";
 import Favorites from "./pages/Favorites";
+import History from "./pages/History";
 import { defaultFilters } from "./lib/filters";
 import { loadSettings, saveSettings, type Settings } from "./lib/settings";
 import { loadHeroSettings, saveHeroSettings, type HeroSettings } from "./lib/heroSettings";
@@ -17,11 +19,18 @@ import { loadSlideshowRules, saveSlideshowRules } from "./lib/slideshow";
 import { useSlideshowRunner } from "./lib/useSlideshowRunner";
 import { useFavorites } from "./lib/useFavorites";
 import { recordSearch } from "./lib/searchHistory";
+import { getViewHistory, recordView, clearViewHistory } from "./lib/viewHistory";
 import { useLang } from "./lib/LangContext";
-import { setTrayLabels } from "./lib/tauri";
+import { isTauri, setTrayLabels } from "./lib/tauri";
+import { loadWidgets } from "./lib/widgets";
+import { spawnWidgetWindow, widgetWindowExists } from "./lib/widgetWindow";
 import type { Filters, Wallpaper } from "./lib/types";
 
-type View = "home" | "results" | "favorites";
+type View = "home" | "results" | "favorites" | "history";
+interface NavEntry {
+  view: View;
+  filters: Filters;
+}
 
 function App() {
   const [settings, setSettings] = useState<Settings>(loadSettings());
@@ -29,8 +38,11 @@ function App() {
   const [recommendationSettings, setRecommendationSettings] = useState<RecommendationSettings>(loadRecommendationSettings());
   const [view, setView] = useState<View>("home");
   const [filters, setFilters] = useState<Filters>(defaultFilters());
+  const [navStack, setNavStack] = useState<NavEntry[]>([]);
+  const [viewHistoryList, setViewHistoryList] = useState<Wallpaper[]>(() => getViewHistory());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [slideshowOpen, setSlideshowOpen] = useState(false);
+  const [widgetsOpen, setWidgetsOpen] = useState(false);
   const [slideshowRules, setSlideshowRules] = useState(() => loadSlideshowRules());
   const [toast, setToast] = useState<string | null>(null);
   const [activeList, setActiveList] = useState<Wallpaper[]>([]);
@@ -39,10 +51,28 @@ function App() {
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const { t, lang } = useLang();
 
+  // Snapshots where we're leaving FROM, right before a navigation actually
+  // changes the view/filters — so "back" can restore it afterward.
+  function pushNav() {
+    setNavStack((stack) => [...stack, { view, filters }].slice(-30));
+  }
+
+  function goBack() {
+    setNavStack((stack) => {
+      if (stack.length === 0) return stack;
+      const prev = stack[stack.length - 1];
+      setView(prev.view);
+      setFilters(prev.filters);
+      return stack.slice(0, -1);
+    });
+  }
+
   function openWallpaper(wallpaper: Wallpaper, list: Wallpaper[]) {
     const idx = list.findIndex((w) => w.id === wallpaper.id);
     setActiveList(list);
     setActiveIndex(idx >= 0 ? idx : 0);
+    recordView(wallpaper);
+    setViewHistoryList(getViewHistory());
   }
 
   useSlideshowRunner(settings.apiKey, slideshowRules);
@@ -53,6 +83,23 @@ function App() {
   useEffect(() => {
     setTrayLabels(t("tray.show"), t("tray.quit"));
   }, [lang, t]);
+
+  // Widgets are activated as their own separate overlay windows (see
+  // lib/widgetWindow.ts), not React state — so anything the user saved
+  // last session needs to be respawned here on launch. Guarded by
+  // widgetWindowExists so a dev-mode HMR re-run of this effect (or
+  // StrictMode's double-invoke) doesn't try to create the same
+  // already-open window twice.
+  useEffect(() => {
+    if (!isTauri()) return;
+    (async () => {
+      for (const widget of loadWidgets()) {
+        if (!(await widgetWindowExists(widget.id))) {
+          await spawnWidgetWindow(widget).catch(() => {});
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     setFilters((f) => {
@@ -85,7 +132,14 @@ function App() {
     return !has;
   }
 
+  function navigateTo(next: View) {
+    if (next === view) return;
+    pushNav();
+    setView(next);
+  }
+
   function runSearch(query: string) {
+    pushNav();
     recordSearch(query);
     setFilters({
       ...defaultFilters(),
@@ -104,6 +158,7 @@ function App() {
   }
 
   function runSort(sorting: Filters["sorting"], topRange?: Filters["topRange"]) {
+    pushNav();
     setFilters({
       ...defaultFilters(),
       sorting,
@@ -113,6 +168,11 @@ function App() {
     setView("results");
   }
 
+  function handleClearHistory() {
+    clearViewHistory();
+    setViewHistoryList([]);
+  }
+
   return (
     <div className="isolate min-h-screen" style={{ background: "var(--color-bg)" }}>
       <HoverBackdrop />
@@ -120,10 +180,14 @@ function App() {
         query={filters.query}
         favoritesCount={favorites.length}
         slideshowActive={slideshowRules.some((r) => r.enabled)}
+        canGoBack={navStack.length > 0}
+        onBack={goBack}
         onSearch={runSearch}
-        onLogo={() => setView("home")}
-        onOpenFavorites={() => setView("favorites")}
+        onLogo={() => navigateTo("home")}
+        onOpenFavorites={() => navigateTo("favorites")}
+        onOpenHistory={() => navigateTo("history")}
         onOpenSlideshow={() => setSlideshowOpen(true)}
+        onOpenWidgets={() => setWidgetsOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
@@ -168,6 +232,17 @@ function App() {
         />
       )}
 
+      {view === "history" && (
+        <History
+          history={viewHistoryList}
+          isFavorite={isFavorite}
+          onOpen={openWallpaper}
+          onToggleFavorite={toggleFavorite}
+          onClear={handleClearHistory}
+          onToast={showToast}
+        />
+      )}
+
       {settingsOpen && (
         <SettingsModal
           settings={settings}
@@ -200,6 +275,8 @@ function App() {
           }}
         />
       )}
+
+      {widgetsOpen && <WidgetsModal onClose={() => setWidgetsOpen(false)} />}
 
       {active && (
         <Lightbox

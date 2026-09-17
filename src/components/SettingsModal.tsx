@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { getVersion } from "@tauri-apps/api/app";
 import type { Settings } from "../lib/settings";
 import { HERO_CUSTOM_SORTING_VALUES, type HeroMode, type HeroSettings } from "../lib/heroSettings";
 import type { RecommendationSettings } from "../lib/recommendationSettings";
 import { shuffledTags } from "../lib/tags";
 import { isTauri, quitApp, setAutostart as syncAutostart } from "../lib/tauri";
+import { exportAllData, importAllData } from "../lib/dataBackup";
 import { useLang } from "../lib/LangContext";
 import { LANGUAGES } from "../lib/i18n";
 
@@ -50,6 +52,35 @@ function ToggleRow({ label, hint, checked, onChange }: { label: string; hint: st
 }
 
 export default function SettingsModal({ settings, heroSettings, recommendationSettings, onSave, onClose }: Props) {
+  const [version, setVersion] = useState<string | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  useEffect(() => {
+    if (isTauri()) getVersion().then(setVersion).catch(() => {});
+  }, []);
+
+  async function handleExportData() {
+    setBackupBusy(true);
+    try {
+      await exportAllData();
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function handleImportData() {
+    // Restoring writes straight into localStorage, but every piece of app
+    // state was already loaded into memory at startup — a reload is the
+    // simplest way to make everything (favorites, widgets, this API key
+    // field, etc.) actually reflect what was just restored.
+    if (!window.confirm(t("settings.importConfirm"))) return;
+    setBackupBusy(true);
+    try {
+      const restored = await importAllData();
+      if (restored) window.location.reload();
+    } finally {
+      setBackupBusy(false);
+    }
+  }
   const [apiKey, setApiKey] = useState(settings.apiKey);
   const [nsfwEnabled, setNsfwEnabled] = useState(settings.nsfwEnabled);
   const [sketchyEnabled, setSketchyEnabled] = useState(settings.sketchyEnabled);
@@ -89,7 +120,7 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.18 }}
-        className="glass-strong flex max-h-[85vh] w-full max-w-md flex-col rounded-3xl p-6"
+        className="glass-strong flex max-h-[85vh] w-full max-w-2xl flex-col rounded-3xl p-6"
       >
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -97,7 +128,7 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
             {t("settings.title")}
           </h2>
           <span className="text-xs" style={{ color: "var(--color-ink-faint)" }}>
-            Wallery v1.0.0
+            {version ? `Wallery v${version}` : "Wallery"}
           </span>
         </div>
 
@@ -244,6 +275,35 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
           </>
         )}
         </div>
+
+        {isTauri() && (
+          <div className="border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+            <p className="mb-1.5 text-xs font-medium" style={{ color: "var(--color-ink-muted)" }}>
+              {t("settings.backup")}
+            </p>
+            <p className="mb-2 text-xs" style={{ color: "var(--color-ink-faint)" }}>
+              {t("settings.backupHint")}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportData}
+                disabled={backupBusy}
+                className="rounded-lg border px-3 py-1.5 text-xs"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
+              >
+                {t("settings.exportData")}
+              </button>
+              <button
+                onClick={handleImportData}
+                disabled={backupBusy}
+                className="rounded-lg border px-3 py-1.5 text-xs"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
+              >
+                {t("settings.importData")}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 pt-4">
           {isTauri() ? (
