@@ -38,10 +38,12 @@ Set up rules — by tag, source, resolution, color, orientation — and Wallery 
 
 Add a clock straight onto your desktop — draggable, resizable, and sitting behind your other windows. 10 built-in presets or a full editor (fonts, colors, glass backgrounds, outline, divider, rotation, opacity, analog or digital), plus live date and weather with a 3-day forecast, per-monitor placement, and exporting a style to share with others.
 
-<p align="center">
-  <img src="screenshots/widget-settings.webp" alt="Clock widget editor" height="420">
-  <img src="screenshots/widget-clock.webp" alt="Clock widget on the desktop" height="420">
-</p>
+<table>
+  <tr>
+    <td><img src="screenshots/widget-settings.webp" alt="Clock widget editor" height="360"></td>
+    <td><img src="screenshots/widget-clock.webp" alt="Clock widget on the desktop" height="360"></td>
+  </tr>
+</table>
 
 Also included: favorites, view history, a photo editor with crop and color adjustments, smarter recommendations that adapt to your feedback, search history, a multi-language UI (RU / EN / ES / FR / DE / ZH), launch-on-startup, and a system tray icon that keeps the slideshow running when the window is closed.
 
