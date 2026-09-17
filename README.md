@@ -34,7 +34,14 @@ Set up rules — by tag, source, resolution, color, orientation — and Wallery 
 
 ![Slideshow rules](https://github.com/user-attachments/assets/ca08da86-b1e8-4739-b44e-bf1d62c2b66f)
 
-Also included: favorites, search history, a multi-language UI (RU / EN / ES / FR / DE / ZH), launch-on-startup, and a system tray icon that keeps the slideshow running when the window is closed.
+### Desktop clock widgets
+
+Add a clock straight onto your desktop — draggable, resizable, and sitting behind your other windows. 10 built-in presets or a full editor (fonts, colors, glass backgrounds, outline, divider, rotation, opacity, analog or digital), plus live date and weather with a 3-day forecast, per-monitor placement, and exporting a style to share with others.
+
+![Clock widget editor](screenshots/widget-settings.webp)
+![Clock widget on the desktop](screenshots/widget-clock.webp)
+
+Also included: favorites, view history, a photo editor with crop and color adjustments, smarter recommendations that adapt to your feedback, search history, a multi-language UI (RU / EN / ES / FR / DE / ZH), launch-on-startup, and a system tray icon that keeps the slideshow running when the window is closed.
 
 ## Download
 
