@@ -1,5 +1,10 @@
 # Wallery
 
+[![GitHub release](https://img.shields.io/github/v/release/dmitrykirsh/wallery?label=release)](https://github.com/dmitrykirsh/wallery/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/dmitrykirsh/wallery/total)](https://github.com/dmitrykirsh/wallery/releases)
+[![License](https://img.shields.io/github/license/dmitrykirsh/wallery)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/dmitrykirsh/wallery?style=social)](https://github.com/dmitrykirsh/wallery)
+
 A fast, modern desktop wallpaper browser for [Wallhaven](https://wallhaven.cc), built with Tauri + React. Browse, filter, crop, and automatically rotate wallpapers — without ever leaving a native desktop app.
 
 ## Features
