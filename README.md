@@ -13,37 +13,41 @@ A fast, modern desktop wallpaper browser for [Wallhaven](https://wallhaven.cc), 
 
 A rotating hero banner (Hot / Top list / Latest / your own custom tags) and a personalized "Recommended for you" row based on your favorites and search history, plus an endless feed of wallpapers grouped by tag.
 
-![Home page](screenshots/home.webp)
+<p align="center"><img src="screenshots/home.webp" alt="Home page"></p>
 
 ### Search like on Wallhaven itself
 
 The same resolution, aspect ratio, color, and sorting filters as the original site — including "At least" / "Exactly" resolution matching and grouped aspect ratios.
 
-![Resolution filter](screenshots/filters.webp)
-![Wallery Recommendations](screenshots/recommendations.webp)
+<p align="center">
+  <img src="screenshots/filters.webp" alt="Resolution filter"><br>
+  <img src="screenshots/recommendations.webp" alt="Wallery Recommendations">
+</p>
 
 ### Crop to your exact screen
 
 Open any wallpaper, pick your monitor's resolution (auto-detected) or a custom size, pan and zoom to frame it, then save the crop or set it as your wallpaper directly.
 
-![Wallpaper detail with crop tool](screenshots/crop.webp)
+<p align="center"><img src="screenshots/crop.webp" alt="Wallpaper detail with crop tool"></p>
 
 ### Automatic wallpaper slideshow
 
 Set up rules — by tag, source, resolution, color, orientation — and Wallery rotates your wallpaper on a schedule, even per monitor, while running quietly in the tray.
 
-![Slideshow rules](screenshots/slideshow.webp)
+<p align="center"><img src="screenshots/slideshow.webp" alt="Slideshow rules"></p>
 
 ### Desktop clock widgets
 
 Add a clock straight onto your desktop — draggable, resizable, and sitting behind your other windows. 10 built-in presets or a full editor (fonts, colors, glass backgrounds, outline, divider, rotation, opacity, analog or digital), plus live date and weather with a 3-day forecast, per-monitor placement, and exporting a style to share with others.
 
-<table>
-  <tr>
-    <td><img src="screenshots/widget-settings.webp" alt="Clock widget editor" height="360"></td>
-    <td><img src="screenshots/widget-clock.webp" alt="Clock widget on the desktop" height="360"></td>
-  </tr>
-</table>
+<p align="center">
+  <table>
+    <tr>
+      <td><img src="screenshots/widget-settings.webp" alt="Clock widget editor" height="360"></td>
+      <td><img src="screenshots/widget-clock.webp" alt="Clock widget on the desktop" height="360"></td>
+    </tr>
+  </table>
+</p>
 
 Also included: favorites, view history, a photo editor with crop and color adjustments, smarter recommendations that adapt to your feedback, search history, a multi-language UI (RU / EN / ES / FR / DE / ZH), launch-on-startup, and a system tray icon that keeps the slideshow running when the window is closed.
 
