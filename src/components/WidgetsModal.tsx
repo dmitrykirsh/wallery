@@ -115,10 +115,10 @@ export default function WidgetsModal({ onClose }: Props) {
         className="glass-strong max-h-[85vh] w-full max-w-md overflow-y-auto rounded-3xl p-6"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
+          <h2 className="font-serif font-semibold text-heading" style={{ color: "var(--color-ink)" }}>
             {t("widgets.title")}
           </h2>
-          <button onClick={onClose} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
+          <button type="button" onClick={onClose} aria-label={t("lightbox.close")} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
             ✕
           </button>
         </div>
@@ -197,15 +197,15 @@ export default function WidgetsModal({ onClose }: Props) {
         {monitors.length > 1 && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5">
             {monitors.map((m, i) => (
-              <span
+              <button
                 key={m.name ?? i}
-                role="button"
+                type="button"
                 className="chip"
                 data-active={addMonitor === i}
                 onClick={() => setAddMonitor(i)}
               >
                 {t("monitor.label")} {i + 1}
-              </span>
+              </button>
             ))}
           </div>
         )}

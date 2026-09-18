@@ -57,7 +57,7 @@ function SliderRow({ label, value, min, max, onChange }: SliderRowProps) {
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between text-xs" style={{ color: "var(--color-ink-muted)" }}>
         <span>{label}</span>
-        <span style={{ color: "var(--color-ink-faint)" }}>{value}</span>
+        <span style={{ color: "var(--color-ink-faint)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
       </div>
       <input type="range" min={min} max={max} step={1} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full" />
     </div>
@@ -218,19 +218,19 @@ export default function EditPanel({ wallpaper, src, onToast, onFilterChange }: P
         </p>
 
         <div className="flex flex-wrap gap-1.5">
-          <span role="button" className="chip" data-active={mode === "screen"} onClick={() => setMode("screen")}>
+          <button type="button" className="chip" data-active={mode === "screen"} onClick={() => setMode("screen")}>
             {t("crop.myScreen")} · {screenTarget.width}×{screenTarget.height}
-          </span>
+          </button>
           {monitors
             .filter((m) => m.width > 0)
             .map((m) => (
-              <span key={m.id} role="button" className="chip" data-active={typeof mode === "object" && mode.monitorId === m.id} onClick={() => setMode({ monitorId: m.id })}>
+              <button key={m.id} type="button" className="chip" data-active={typeof mode === "object" && mode.monitorId === m.id} onClick={() => setMode({ monitorId: m.id })}>
                 {t("monitor.label")} {m.index} · {m.width}×{m.height}
-              </span>
+              </button>
             ))}
-          <span role="button" className="chip" data-active={mode === "custom"} onClick={() => setMode("custom")}>
+          <button type="button" className="chip" data-active={mode === "custom"} onClick={() => setMode("custom")}>
             {t("crop.custom")}
-          </span>
+          </button>
         </div>
 
         {mode === "custom" && (
@@ -291,9 +291,9 @@ export default function EditPanel({ wallpaper, src, onToast, onFilterChange }: P
             {t("edit.colorTitle")}
           </p>
           {!isNeutral(adjust) && (
-            <span role="button" className="text-xs underline" style={{ color: "var(--color-ink-faint)" }} onClick={() => setAdjust(NEUTRAL_ADJUSTMENTS)}>
+            <button type="button" className="text-xs underline" style={{ color: "var(--color-ink-faint)" }} onClick={() => setAdjust(NEUTRAL_ADJUSTMENTS)}>
               {t("edit.reset")}
-            </span>
+            </button>
           )}
         </div>
 
@@ -302,9 +302,9 @@ export default function EditPanel({ wallpaper, src, onToast, onFilterChange }: P
         </p>
         <div className="flex flex-wrap gap-1.5">
           {PRESET_FILTERS.map((p) => (
-            <span key={p.id} role="button" className="chip" data-active={adjustmentsEqual(adjust, p.adjust)} onClick={() => applyPreset(p.adjust)}>
+            <button key={p.id} type="button" className="chip" data-active={adjustmentsEqual(adjust, p.adjust)} onClick={() => applyPreset(p.adjust)}>
               {p.name}
-            </span>
+            </button>
           ))}
         </div>
 
@@ -315,27 +315,37 @@ export default function EditPanel({ wallpaper, src, onToast, onFilterChange }: P
             </p>
             <div className="flex flex-wrap gap-1.5">
               {customFilters.map((f) => (
-                <motion.span
+                // A div, not a button: it contains its own delete button, and
+                // a button can't legally nest another button.
+                <motion.div
                   key={f.id}
                   role="button"
+                  tabIndex={0}
                   whileTap={{ scale: 0.95 }}
                   className="chip"
                   data-active={adjustmentsEqual(adjust, f.adjust)}
                   onClick={() => applyPreset(f.adjust)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      applyPreset(f.adjust);
+                    }
+                  }}
                 >
                   {f.name}
-                  <span
-                    role="button"
+                  <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       removeCustomFilter(f.id);
                     }}
+                    aria-label={t("edit.deleteFilter")}
                     title={t("edit.deleteFilter")}
                     className="ml-1.5"
                   >
                     ✕
-                  </span>
-                </motion.span>
+                  </button>
+                </motion.div>
               ))}
             </div>
           </>

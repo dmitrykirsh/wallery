@@ -57,17 +57,23 @@ export default function SlideshowModal({ rules, apiKey, nsfwAllowed, sketchyAllo
         transition={{ duration: 0.18 }}
         className="glass-strong max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-3xl p-6"
       >
-        <div className="mb-1 flex items-center justify-between">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <h2 className="font-serif font-semibold text-heading" style={{ color: "var(--color-ink)" }}>
             {t("slideshow.title")}
           </h2>
-          <button
-            onClick={addRule}
-            className="rounded-full px-3 py-1.5 text-sm font-medium"
-            style={{ background: "var(--gradient-accent)", color: "var(--color-accent-ink)" }}
-          >
-            + {t("action.addRule")}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={addRule}
+              className="rounded-full px-3 py-1.5 text-sm font-medium"
+              style={{ background: "var(--gradient-accent)", color: "var(--color-accent-ink)" }}
+            >
+              + {t("action.addRule")}
+            </button>
+            <button type="button" onClick={onClose} aria-label={t("lightbox.close")} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
+              ✕
+            </button>
+          </div>
         </div>
         <p className="mb-4 text-sm" style={{ color: "var(--color-ink-muted)" }}>
           {t("slideshow.description")}
@@ -97,10 +103,11 @@ export default function SlideshowModal({ rules, apiKey, nsfwAllowed, sketchyAllo
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm" style={{ color: "var(--color-ink-muted)" }}>
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm" style={{ color: "var(--color-ink-muted)" }}>
             {t("action.cancel")}
           </button>
           <button
+            type="button"
             onClick={() => onSave(draft)}
             className="rounded-lg px-4 py-2 text-sm font-medium"
             style={{ background: "var(--gradient-accent)", color: "var(--color-accent-ink)" }}
@@ -159,20 +166,23 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
   return (
     <div className="glass rounded-2xl">
       <div className="flex items-center gap-2 p-3">
-        <motion.span
-          role="button"
+        <motion.button
+          type="button"
+          role="switch"
+          aria-checked={rule.enabled}
+          aria-label={t(`slideshow.source.${rule.source}` as const)}
           whileTap={{ scale: 0.9 }}
           onClick={() => onChange({ enabled: !rule.enabled })}
-          className="relative h-5 w-9 shrink-0 rounded-full transition-colors"
-          style={{ background: rule.enabled ? "var(--color-accent)" : "var(--color-surface-3)" }}
+          className="relative h-5 w-9 shrink-0 rounded-full border text-left transition-colors"
+          style={{ background: rule.enabled ? "var(--color-accent)" : "var(--color-surface-3)", borderColor: "var(--color-border)" }}
         >
           <span
-            className="absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform"
-            style={{ transform: rule.enabled ? "translateX(18px)" : "translateX(2px)" }}
+            className="absolute top-0.5 left-0.5 h-4 w-4 rounded-full transition-transform"
+            style={{ background: "var(--color-ink)", transform: rule.enabled ? "translateX(16px)" : "translateX(0)" }}
           />
-        </motion.span>
+        </motion.button>
 
-        <button onClick={onToggleExpand} className="flex flex-1 items-center justify-between gap-2 text-left">
+        <button type="button" onClick={onToggleExpand} aria-expanded={expanded} className="flex flex-1 items-center justify-between gap-2 text-left">
           <span className="truncate text-sm" style={{ color: "var(--color-ink)" }}>
             {t(`slideshow.source.${rule.source}` as const)}
             {rule.query ? ` · ${rule.query}` : ""} · {monitorLabel}
@@ -182,7 +192,7 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
           </motion.svg>
         </button>
 
-        <button onClick={onDelete} title={t("slideshow.deleteRule")} style={{ color: "var(--color-ink-faint)" }}>
+        <button type="button" onClick={onDelete} aria-label={t("slideshow.deleteRule")} title={t("slideshow.deleteRule")} style={{ color: "var(--color-ink-faint)" }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m-9 0 1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -211,9 +221,9 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {SOURCE_OPTIONS.map((s) => (
-                    <span key={s} role="button" onClick={() => onChange({ source: s })} className="chip" data-active={rule.source === s}>
+                    <button key={s} type="button" onClick={() => onChange({ source: s })} className="chip" data-active={rule.source === s}>
                       {t(`slideshow.source.${s}` as const)}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -230,15 +240,15 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
 
               <div className="flex flex-wrap gap-1.5">
                 {(Object.keys(CATEGORY_KEY) as Category[]).map((cat) => (
-                  <span key={cat} role="button" onClick={() => toggleCategory(cat)} className="chip" data-active={rule.categories[cat]}>
+                  <button key={cat} type="button" onClick={() => toggleCategory(cat)} className="chip" data-active={rule.categories[cat]}>
                     {t(CATEGORY_KEY[cat])}
-                  </span>
+                  </button>
                 ))}
                 <span className="mx-1 h-5 w-px self-center" style={{ background: "var(--color-border)" }} />
                 {purities.map((p) => (
-                  <span key={p} role="button" onClick={() => togglePurity(p)} className="chip" data-active={rule.purities[p]}>
+                  <button key={p} type="button" onClick={() => togglePurity(p)} className="chip" data-active={rule.purities[p]}>
                     {p.toUpperCase()}
-                  </span>
+                  </button>
                 ))}
               </div>
 
@@ -274,9 +284,9 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {ORIENTATIONS.map((o) => (
-                    <span key={o} role="button" onClick={() => onChange({ orientation: o })} className="chip" data-active={rule.orientation === o}>
+                    <button key={o} type="button" onClick={() => onChange({ orientation: o })} className="chip" data-active={rule.orientation === o}>
                       {o === "any" ? t("filter.any") : o === "landscape" ? t("filter.landscape") : t("filter.portrait")}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -288,19 +298,22 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                   </label>
                   <div className="flex flex-wrap gap-1.5">
                     <button
+                      type="button"
                       onClick={() => onChange({ colors: [] })}
                       className="rounded-md px-2 py-1 text-xs"
-                      style={{ background: "rgba(255,255,255,0.06)", color: "var(--color-ink-muted)" }}
+                      style={{ background: "var(--color-surface-2)", color: "var(--color-ink-muted)" }}
                     >
                       {t("action.any")}
                     </button>
                     {COLORS.map((c) => (
                       <button
                         key={c}
+                        type="button"
                         onClick={() => onChange({ colors: [c] })}
                         className="h-6 w-6 rounded-full border-2"
                         style={{ background: `#${c}`, borderColor: rule.colors[0] === c ? "var(--color-accent)" : "transparent" }}
                         title={`#${c}`}
+                        aria-label={`#${c}`}
                       />
                     ))}
                   </div>
@@ -312,13 +325,13 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                   {t("slideshow.targetMonitor")}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  <span role="button" onClick={() => onChange({ monitor: null })} className="chip" data-active={rule.monitor === null}>
+                  <button type="button" onClick={() => onChange({ monitor: null })} className="chip" data-active={rule.monitor === null}>
                     {t("slideshow.allOnePicture")}
-                  </span>
+                  </button>
                   {monitors.map((m) => (
-                    <span key={m.id} role="button" onClick={() => onChange({ monitor: m.id })} className="chip" data-active={rule.monitor === m.id}>
+                    <button key={m.id} type="button" onClick={() => onChange({ monitor: m.id })} className="chip" data-active={rule.monitor === m.id}>
                       {t("monitor.label")} {m.index}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -329,14 +342,15 @@ function RuleCard({ rule, expanded, onToggleExpand, onChange, onDelete, monitors
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {STYLES.map((s) => (
-                    <span key={s} role="button" onClick={() => onChange({ style: s })} className="chip" data-active={rule.style === s}>
+                    <button key={s} type="button" onClick={() => onChange({ style: s })} className="chip" data-active={rule.style === s}>
                       {t(`style.${s}` as const)}
-                    </span>
+                    </button>
                   ))}
                 </div>
               </div>
 
               <button
+                type="button"
                 onClick={applyNow}
                 disabled={applying}
                 className="rounded-lg border px-4 py-2 text-sm"

@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { Wallpaper } from "../lib/types";
 import WallpaperActions from "./WallpaperActions";
 import FallbackImage from "./FallbackImage";
-import { useHoverBackground } from "../lib/HoverBackgroundContext";
 
 interface Props {
   wallpapers: Wallpaper[];
@@ -84,17 +83,22 @@ function CollageTile({
   onOpen: (w: Wallpaper, list: Wallpaper[]) => void;
   onToast: (m: string) => void;
 }) {
-  const { setImage } = useHoverBackground();
   const sources = [tileSrc(wallpaper), wallpaper.thumbs.original, wallpaper.path];
 
   return (
     <div
       role="button"
+      tabIndex={0}
+      aria-label={wallpaper.resolution}
       className="tile-glass group relative cursor-pointer overflow-hidden rounded-2xl transition-[transform,box-shadow] duration-300 ease-out hover:z-10 hover:scale-[1.015] hover:shadow-[0_12px_36px_rgba(0,0,0,0.4)]"
       style={{ background: "var(--color-surface)", ...gridStyle }}
-      onMouseEnter={() => setImage(wallpaper.thumbs.small)}
-      onMouseLeave={() => setImage(null)}
       onClick={() => onOpen(wallpaper, list)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(wallpaper, list);
+        }
+      }}
     >
       <AnimatePresence mode="sync">
         <motion.div
@@ -112,14 +116,9 @@ function CollageTile({
           />
         </motion.div>
       </AnimatePresence>
-      <div className="tile-sheen pointer-events-none absolute inset-0" />
-      <div className="tile-streaks pointer-events-none absolute inset-0">
-        <span />
-        <span />
-      </div>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/0 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
       <div className="pointer-events-none absolute bottom-2 left-2 right-2 flex items-end justify-between gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <span className="rounded-md px-1.5 py-0.5 text-[11px] font-medium text-white/90" style={{ background: "rgba(0,0,0,0.45)" }}>
+        <span className="rounded-md px-1.5 py-0.5 text-xs font-medium text-white/90" style={{ background: "rgba(0,0,0,0.45)" }}>
           {wallpaper.resolution}
         </span>
         <div className="pointer-events-auto">
@@ -219,8 +218,9 @@ export default function HeroCarousel({ wallpapers, label, onOpen, onToast }: Pro
       ))}
 
       <span
-        className="glass pointer-events-none absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide"
+        className="glass pointer-events-none absolute left-3 top-3 z-10 max-w-[70%] truncate rounded-full px-3 py-1 text-xs font-medium uppercase tracking-wide"
         style={{ color: "var(--color-accent)" }}
+        title={label}
       >
         {label}
       </span>

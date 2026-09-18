@@ -5,7 +5,6 @@ import SlideshowModal from "./components/SlideshowModal";
 import WidgetsModal from "./components/WidgetsModal";
 import Toast from "./components/Toast";
 import Lightbox from "./components/Lightbox";
-import HoverBackdrop from "./components/HoverBackdrop";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import Home from "./pages/Home";
 import Results from "./pages/Results";
@@ -182,7 +181,6 @@ function App() {
 
   return (
     <div className="isolate min-h-screen" style={{ background: "var(--color-bg)" }}>
-      <HoverBackdrop />
       <TopBar
         query={filters.query}
         favoritesCount={favorites.length}

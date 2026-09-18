@@ -49,7 +49,7 @@ export default function ContextMenu({ pos, actions, onClose }: Props) {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.94 }}
         transition={{ duration: 0.12, ease: "easeOut" }}
-        className="glass-strong fixed z-[200] rounded-2xl p-1.5 text-left shadow-2xl"
+        className="glass-strong fixed z-[200] rounded-2xl p-1.5 text-left"
         style={{ top, left, width: MENU_WIDTH }}
       >
         {actions.map((a, i) => (
@@ -59,8 +59,8 @@ export default function ContextMenu({ pos, actions, onClose }: Props) {
               a.onClick();
               onClose();
             }}
-            className="block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-white/10"
-            style={{ color: a.danger ? "#ef4b53" : "var(--color-ink)" }}
+            className="block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--color-accent-soft)]"
+            style={{ color: a.danger ? "var(--color-favorite)" : "var(--color-ink)" }}
           >
             {a.label}
           </button>

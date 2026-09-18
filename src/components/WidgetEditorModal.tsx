@@ -26,9 +26,9 @@ function ChipRow<T extends string>({ options, value, onChange, labels }: { optio
   return (
     <div className="flex flex-wrap gap-1.5">
       {options.map((opt) => (
-        <span key={opt} role="button" className="chip" data-active={value === opt} onClick={() => onChange(opt)}>
+        <button key={opt} type="button" className="chip" data-active={value === opt} onClick={() => onChange(opt)}>
           {labels[opt]}
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -39,7 +39,7 @@ function SliderField({ label, value, min, max, step = 1, onChange }: { label: st
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between text-xs" style={{ color: "var(--color-ink-muted)" }}>
         <span>{label}</span>
-        <span style={{ color: "var(--color-ink-faint)" }}>{value}</span>
+        <span style={{ color: "var(--color-ink-faint)", fontVariantNumeric: "tabular-nums" }}>{value}</span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full" />
     </div>
@@ -48,7 +48,8 @@ function SliderField({ label, value, min, max, step = 1, onChange }: { label: st
 
 function CheckboxField({ label, checked, onChange, className }: { label: string; checked: boolean; onChange: (v: boolean) => void; className?: string }) {
   return (
-    <span
+    <button
+      type="button"
       role="checkbox"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
@@ -66,7 +67,7 @@ function CheckboxField({ label, checked, onChange, className }: { label: string;
         )}
       </span>
       {label}
-    </span>
+    </button>
   );
 }
 
@@ -79,9 +80,9 @@ function ColorField({ label, value, onChange, onClear }: { label: string; value:
       <div className="flex items-center gap-1.5">
         <input type="color" value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : "#ffffff"} onChange={(e) => onChange(e.target.value)} className="h-7 w-9 rounded border-0 bg-transparent" />
         {onClear && (
-          <span role="button" className="text-xs underline" style={{ color: "var(--color-ink-faint)" }} onClick={onClear}>
+          <button type="button" className="text-xs underline" style={{ color: "var(--color-ink-faint)" }} onClick={onClear}>
             ✕
-          </span>
+          </button>
         )}
       </div>
     </div>
@@ -187,10 +188,10 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
         className="glass-strong max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-3xl p-6"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
+          <h2 className="font-serif font-semibold text-heading" style={{ color: "var(--color-ink)" }}>
             {t("editor.title")}
           </h2>
-          <button onClick={handleClose} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
+          <button type="button" onClick={handleClose} aria-label={t("lightbox.close")} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
             ✕
           </button>
         </div>
@@ -202,10 +203,10 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
             </p>
             <div className="flex flex-wrap gap-1.5">
               {CLOCK_PRESETS.map((p) => (
-                <span key={p.id} role="button" className="chip" data-active={JSON.stringify(style) === JSON.stringify(p.style)} onClick={() => update(p.style)}>
+                <button key={p.id} type="button" className="chip" data-active={JSON.stringify(style) === JSON.stringify(p.style)} onClick={() => update(p.style)}>
                   <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: swatchColor(p.style) }} />
                   {p.name}
-                </span>
+                </button>
               ))}
             </div>
           </div>
@@ -217,20 +218,36 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {customStyles.map((s) => (
-                  <motion.span key={s.id} whileTap={{ scale: 0.95 }} role="button" className="chip" data-active={JSON.stringify(style) === JSON.stringify(s.style)} onClick={() => update(s.style)}>
+                  // A div, not a button: it contains its own delete button.
+                  <motion.div
+                    key={s.id}
+                    whileTap={{ scale: 0.95 }}
+                    role="button"
+                    tabIndex={0}
+                    className="chip"
+                    data-active={JSON.stringify(style) === JSON.stringify(s.style)}
+                    onClick={() => update(s.style)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        update(s.style);
+                      }
+                    }}
+                  >
                     <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full align-middle" style={{ background: swatchColor(s.style) }} />
                     {s.name}
-                    <span
-                      role="button"
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeCustomStyle(s.id);
                       }}
+                      aria-label={t("editor.deleteStyle")}
                       className="ml-1.5"
                     >
                       ✕
-                    </span>
-                  </motion.span>
+                    </button>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -267,9 +284,9 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
               <SliderField label={t("editor.width")} value={size.width} min={80} max={1400} step={10} onChange={(width) => updateSize({ ...size, width })} />
               <SliderField label={t("editor.height")} value={size.height} min={60} max={800} step={10} onChange={(height) => updateSize({ ...size, height })} />
             </div>
-            <span role="button" className="mt-2 inline-block text-xs underline" style={{ color: "var(--color-ink-faint)" }} onClick={() => updateSize({ width: Math.max(size.width, size.height), height: Math.max(size.width, size.height) })}>
+            <button type="button" className="mt-2 inline-block text-xs underline" style={{ color: "var(--color-ink-faint)" }} onClick={() => updateSize({ width: Math.max(size.width, size.height), height: Math.max(size.width, size.height) })}>
               {t("editor.square")}
-            </span>
+            </button>
           </div>
 
           <div className="border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
@@ -300,9 +317,9 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
                 {style.background.kind === "glass" && <SliderField label={t("editor.blur")} value={style.background.blur} min={0} max={40} onChange={(blur) => patchBackground({ blur })} />}
                 <SliderField label={t("editor.cornerRadius")} value={Math.min(style.background.cornerRadius, 60)} min={0} max={60} onChange={(cornerRadius) => patchBackground({ cornerRadius })} />
                 <div className="flex items-center gap-2">
-                  <span role="button" className="chip" data-active={style.background.cornerRadius >= 999} onClick={() => patchBackground({ cornerRadius: 999 })}>
+                  <button type="button" className="chip" data-active={style.background.cornerRadius >= 999} onClick={() => patchBackground({ cornerRadius: 999 })}>
                     {t("editor.round")}
-                  </span>
+                  </button>
                 </div>
                 <ColorField
                   label={t("editor.border")}
@@ -339,9 +356,9 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
               </p>
               <div className="mb-3 flex flex-wrap gap-1.5">
                 {FONT_OPTIONS.map((f) => (
-                  <span key={f.id} role="button" className="chip" data-active={style.digital.fontId === f.id} onClick={() => patchDigital({ fontId: f.id })}>
+                  <button key={f.id} type="button" className="chip" data-active={style.digital.fontId === f.id} onClick={() => patchDigital({ fontId: f.id })}>
                     {f.label}
-                  </span>
+                  </button>
                 ))}
               </div>
               <div className="flex flex-col gap-2.5">
@@ -366,9 +383,9 @@ export default function WidgetEditorModal({ widget, onClose, onSave }: Props) {
                   <div className="flex flex-col gap-2.5">
                     <div className="flex flex-wrap gap-1.5">
                       {FONT_OPTIONS.map((f) => (
-                        <span key={f.id} role="button" className="chip" data-active={style.digital.dateFontId === f.id} onClick={() => patchDigital({ dateFontId: f.id })}>
+                        <button key={f.id} type="button" className="chip" data-active={style.digital.dateFontId === f.id} onClick={() => patchDigital({ dateFontId: f.id })}>
                           {f.label}
-                        </span>
+                        </button>
                       ))}
                     </div>
                     <SliderField label={t("editor.fontSize")} value={style.digital.dateFontSize} min={10} max={100} onChange={(dateFontSize) => patchDigital({ dateFontSize })} />

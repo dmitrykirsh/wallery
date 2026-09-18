@@ -247,44 +247,52 @@ export default function Lightbox({
 
           {hasMultiple && (
             <>
-              <span
-                role="button"
+              <button
+                type="button"
                 onClick={onPrev}
-                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur transition-colors"
-                style={{ background: "rgba(20,18,25,0.7)", color: "var(--color-ink)" }}
+                aria-label={t("lightbox.prev")}
+                className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-lg transition-colors"
+                style={{ background: "rgba(33,26,22,0.72)", color: "var(--color-ink)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M15 5l-7 7 7 7" />
                 </svg>
-              </span>
-              <span
-                role="button"
+              </button>
+              <button
+                type="button"
                 onClick={onNext}
-                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-lg backdrop-blur transition-colors"
-                style={{ background: "rgba(20,18,25,0.7)", color: "var(--color-ink)" }}
+                aria-label={t("lightbox.next")}
+                className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-lg transition-colors"
+                style={{ background: "rgba(33,26,22,0.72)", color: "var(--color-ink)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 5l7 7-7 7" />
                 </svg>
-              </span>
+              </button>
             </>
           )}
         </div>
 
         <div className="flex w-full flex-col gap-4 overflow-y-auto p-5 md:w-80">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium" style={{ color: "var(--color-ink)" }}>
+            <span className="font-serif font-semibold text-heading" style={{ color: "var(--color-ink)" }}>
               {detail.resolution}
             </span>
             <div className="flex items-center gap-3">
-              <span role="button" onClick={() => openInBrowser(`https://wallhaven.cc/w/${detail.id}`)} title={t("lightbox.openInBrowser")} style={{ color: "var(--color-ink-muted)" }}>
+              <button
+                type="button"
+                onClick={() => openInBrowser(`https://wallhaven.cc/w/${detail.id}`)}
+                aria-label={t("lightbox.openInBrowser")}
+                title={t("lightbox.openInBrowser")}
+                style={{ color: "var(--color-ink-muted)" }}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M15 3h6v6" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M10 14 21 3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </span>
-              <span role="button" onClick={() => onToggleFavorite(detail)} title={t("lightbox.favoriteHint")}>
+              </button>
+              <button type="button" onClick={() => onToggleFavorite(detail)} aria-label={t("lightbox.favoriteHint")} title={t("lightbox.favoriteHint")}>
                 <svg
                   width="18"
                   height="18"
@@ -295,10 +303,10 @@ export default function Lightbox({
                 >
                   <path d="M12 21s-7.5-4.6-10-9.3C0.3 8 1.7 4 5.6 3.2 8 2.7 10.4 4 12 6.3 13.6 4 16 2.7 18.4 3.2 22.3 4 23.7 8 22 11.7 19.5 16.4 12 21 12 21Z" />
                 </svg>
-              </span>
-              <span role="button" onClick={onClose} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
+              </button>
+              <button type="button" onClick={onClose} aria-label={t("lightbox.close")} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
                 ✕
-              </span>
+              </button>
             </div>
           </div>
 
@@ -331,9 +339,9 @@ export default function Lightbox({
 
           <div className="flex shrink-0 flex-wrap gap-1.5">
             {(detail.tags ?? []).map((tag) => (
-              <motion.span
+              <motion.button
                 key={tag.id}
-                role="button"
+                type="button"
                 whileTap={{ scale: 0.92 }}
                 onClick={() => onTagClick(tag.name)}
                 onContextMenu={(e) => {
@@ -345,7 +353,7 @@ export default function Lightbox({
                 style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
               >
                 #{tag.name}
-              </motion.span>
+              </motion.button>
             ))}
           </div>
 
@@ -353,10 +361,11 @@ export default function Lightbox({
 
           {isTauri() && (
             <div className="flex shrink-0 flex-col gap-2 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
-              <span
-                role="button"
+              <button
+                type="button"
                 onClick={() => setEditOpen((o) => !o)}
-                className="flex items-center justify-between text-xs font-medium uppercase tracking-wide"
+                aria-expanded={editOpen}
+                className="flex w-full items-center justify-between text-xs font-medium uppercase tracking-wide"
                 style={{ color: "var(--color-ink-faint)" }}
               >
                 {t("edit.title")}
@@ -371,7 +380,7 @@ export default function Lightbox({
                 >
                   <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </span>
+              </button>
 
               {editOpen &&
                 (resolvedSrc ? (

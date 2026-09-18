@@ -14,7 +14,7 @@ export default function Favorites({ favorites, isFavorite, onOpen, onToggleFavor
   const { t } = useLang();
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
-      <h1 className="mb-5 text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
+      <h1 className="mb-5 font-serif font-semibold text-heading-lg" style={{ color: "var(--color-ink)" }}>
         {t("favorites.title")}
       </h1>
 

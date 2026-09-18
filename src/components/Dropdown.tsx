@@ -44,7 +44,7 @@ export default function Dropdown({ label, icon, active, children }: Props) {
             exit={{ opacity: 0, scale: 0.96, y: -2 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
             style={{ transformOrigin: "top left" }}
-            className="glass-strong absolute left-0 z-30 mt-2 min-w-[220px] rounded-2xl p-3 shadow-2xl"
+            className="glass-strong absolute left-0 z-30 mt-2 min-w-[220px] rounded-2xl p-3"
           >
             {children}
           </motion.div>

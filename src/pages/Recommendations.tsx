@@ -94,10 +94,11 @@ export default function Recommendations({ apiKey, nsfwAllowed, sketchyAllowed, r
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
+        <h1 className="font-serif font-semibold text-heading-lg" style={{ color: "var(--color-ink)" }}>
           {t("recommendations.title")}
         </h1>
         <button
+          type="button"
           onClick={() => setRefreshTick((n) => n + 1)}
           disabled={loading}
           className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm"

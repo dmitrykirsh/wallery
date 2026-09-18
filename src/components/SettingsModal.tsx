@@ -39,17 +39,20 @@ function ToggleRow({ label, hint, checked, onChange }: { label: string; hint: st
           {hint}
         </div>
       </div>
-      <span
-        role="button"
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
         onClick={() => onChange(!checked)}
-        className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
-        style={{ background: checked ? "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))" : "var(--color-surface-3)" }}
+        className="relative h-6 w-11 shrink-0 rounded-full border text-left transition-colors"
+        style={{ background: checked ? "var(--color-accent)" : "var(--color-surface-3)", borderColor: "var(--color-border)" }}
       >
         <span
-          className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform"
-          style={{ transform: checked ? "translateX(22px)" : "translateX(2px)" }}
+          className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full shadow transition-transform"
+          style={{ background: "var(--color-ink)", transform: checked ? "translateX(20px)" : "translateX(0)" }}
         />
-      </span>
+      </button>
     </div>
   );
 }
@@ -173,12 +176,17 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
       >
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="mb-1 flex items-baseline justify-between gap-2">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
-            {t("settings.title")}
-          </h2>
-          <span className="text-xs" style={{ color: "var(--color-ink-faint)" }}>
-            {version ? `Wallery v${version}` : "Wallery"}
-          </span>
+          <div className="flex items-baseline gap-2">
+            <h2 className="font-serif font-semibold text-heading" style={{ color: "var(--color-ink)" }}>
+              {t("settings.title")}
+            </h2>
+            <span className="text-xs" style={{ color: "var(--color-ink-faint)" }}>
+              {version ? `Wallery v${version}` : "Wallery"}
+            </span>
+          </div>
+          <button type="button" onClick={onClose} aria-label={t("lightbox.close")} className="text-sm" style={{ color: "var(--color-ink-muted)" }}>
+            ✕
+          </button>
         </div>
 
         <div className="my-4">
@@ -187,9 +195,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
           </label>
           <div className="flex flex-wrap gap-1.5">
             {LANGUAGES.map((l) => (
-              <span key={l.code} role="button" onClick={() => setLang(l.code)} className="chip" data-active={lang === l.code}>
+              <button key={l.code} type="button" onClick={() => setLang(l.code)} className="chip" data-active={lang === l.code}>
                 {l.label}
-              </span>
+              </button>
             ))}
           </div>
         </div>
@@ -209,9 +217,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
           </label>
           <div className="mb-3 flex flex-wrap gap-1.5">
             {HERO_MODES.map((m) => (
-              <span key={m.key} role="button" onClick={() => updateHero({ mode: m.key })} className="chip" data-active={hero.mode === m.key}>
+              <button key={m.key} type="button" onClick={() => updateHero({ mode: m.key })} className="chip" data-active={hero.mode === m.key}>
                 {t(m.label)}
-              </span>
+              </button>
             ))}
           </div>
 
@@ -230,9 +238,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               </label>
               <div className="mb-3 flex flex-wrap gap-1.5">
                 {HERO_CUSTOM_SORTING_VALUES.map((s) => (
-                  <span key={s} role="button" onClick={() => updateHero({ customSorting: s })} className="chip" data-active={hero.customSorting === s}>
+                  <button key={s} type="button" onClick={() => updateHero({ customSorting: s })} className="chip" data-active={hero.customSorting === s}>
                     {t(`sort.${s}` as const)}
-                  </span>
+                  </button>
                 ))}
               </div>
             </>
@@ -256,16 +264,16 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               {rec.customTags.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {rec.customTags.map((tag) => (
-                    <motion.span
+                    <motion.button
                       key={tag}
+                      type="button"
                       whileTap={{ scale: 0.95 }}
-                      role="button"
                       onClick={() => removeRecTag(tag)}
                       className="chip"
                       data-active="true"
                     >
                       #{tag} ✕
-                    </motion.span>
+                    </motion.button>
                   ))}
                 </div>
               )}
@@ -289,9 +297,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               </p>
               <div className="flex max-h-36 flex-wrap gap-1.5 overflow-y-auto">
                 {suggestedTags.map((tag) => (
-                  <span key={tag} role="button" onClick={() => toggleRecTag(tag)} className="chip" data-active={rec.customTags.includes(tag)}>
+                  <button key={tag} type="button" onClick={() => toggleRecTag(tag)} className="chip" data-active={rec.customTags.includes(tag)}>
                     #{tag}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -304,15 +312,15 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
 
             <div className="mb-2 flex flex-wrap gap-1.5">
               {(["general", "anime", "people"] as Category[]).map((cat) => (
-                <span key={cat} role="button" onClick={() => toggleRecCategory(cat)} className="chip" data-active={rec.categories[cat]}>
+                <button key={cat} type="button" onClick={() => toggleRecCategory(cat)} className="chip" data-active={rec.categories[cat]}>
                   {t(`filter.${cat}` as const)}
-                </span>
+                </button>
               ))}
               <span className="mx-1 h-5 w-px self-center" style={{ background: "var(--color-border)" }} />
               {(["sfw", ...(sketchyEnabled ? (["sketchy"] as const) : []), ...(nsfwEnabled ? (["nsfw"] as const) : [])] as Purity[]).map((p) => (
-                <span key={p} role="button" onClick={() => toggleRecPurity(p)} className="chip" data-active={rec.purities[p]}>
+                <button key={p} type="button" onClick={() => toggleRecPurity(p)} className="chip" data-active={rec.purities[p]}>
                   {p.toUpperCase()}
-                </span>
+                </button>
               ))}
             </div>
 
@@ -321,9 +329,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
             </p>
             <div className="mb-2 flex flex-wrap gap-1.5">
               {RESOLUTION_GROUPS.flatMap((g) => g.values).map((res) => (
-                <span key={res} role="button" onClick={() => pickRecAtLeast(res)} className="chip" data-active={rec.atleast === res}>
+                <button key={res} type="button" onClick={() => pickRecAtLeast(res)} className="chip" data-active={rec.atleast === res}>
                   {res}
-                </span>
+                </button>
               ))}
             </div>
 
@@ -331,18 +339,18 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               {t("filter.ratio")}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              <span role="button" onClick={() => setRecRatioGroup(LANDSCAPE_RATIOS)} className="chip" data-active={LANDSCAPE_RATIOS.every((r) => rec.ratios.includes(r)) && rec.ratios.length === LANDSCAPE_RATIOS.length}>
+              <button type="button" onClick={() => setRecRatioGroup(LANDSCAPE_RATIOS)} className="chip" data-active={LANDSCAPE_RATIOS.every((r) => rec.ratios.includes(r)) && rec.ratios.length === LANDSCAPE_RATIOS.length}>
                 {t("filter.allWide")}
-              </span>
-              <span role="button" onClick={() => setRecRatioGroup(PORTRAIT_RATIOS)} className="chip" data-active={PORTRAIT_RATIOS.every((r) => rec.ratios.includes(r)) && rec.ratios.length === PORTRAIT_RATIOS.length}>
+              </button>
+              <button type="button" onClick={() => setRecRatioGroup(PORTRAIT_RATIOS)} className="chip" data-active={PORTRAIT_RATIOS.every((r) => rec.ratios.includes(r)) && rec.ratios.length === PORTRAIT_RATIOS.length}>
                 {t("filter.allPortrait")}
-              </span>
+              </button>
               {RATIO_GROUPS.flatMap((g) => g.values).map((value) => {
                 const r = RATIOS.find((x) => x.value === value);
                 return (
-                  <span key={value} role="button" onClick={() => toggleRecRatio(value)} className="chip" data-active={rec.ratios.includes(value)}>
+                  <button key={value} type="button" onClick={() => toggleRecRatio(value)} className="chip" data-active={rec.ratios.includes(value)}>
                     {r?.label ?? value}
-                  </span>
+                  </button>
                 );
               })}
             </div>
@@ -358,9 +366,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
             {blockedTags.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {blockedTags.map((tag) => (
-                  <motion.span key={tag} whileTap={{ scale: 0.95 }} role="button" onClick={() => removeBlockedTag(tag)} className="chip" data-active="true">
+                  <motion.button key={tag} type="button" whileTap={{ scale: 0.95 }} onClick={() => removeBlockedTag(tag)} className="chip" data-active="true">
                     #{tag} ✕
-                  </motion.span>
+                  </motion.button>
                 ))}
               </div>
             )}
@@ -417,6 +425,7 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
             </p>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={handleExportData}
                 disabled={backupBusy}
                 className="rounded-lg border px-3 py-1.5 text-xs"
@@ -425,6 +434,7 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
                 {t("settings.exportData")}
               </button>
               <button
+                type="button"
                 onClick={handleImportData}
                 disabled={backupBusy}
                 className="rounded-lg border px-3 py-1.5 text-xs"
@@ -438,17 +448,18 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
 
         <div className="flex items-center justify-between gap-2 pt-4">
           {isTauri() ? (
-            <button onClick={() => quitApp()} className="rounded-lg border px-4 py-2 text-sm" style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}>
+            <button type="button" onClick={() => quitApp()} className="rounded-lg border px-4 py-2 text-sm" style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}>
               {t("settings.quit")}
             </button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
-            <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm" style={{ color: "var(--color-ink-muted)" }}>
+            <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm" style={{ color: "var(--color-ink-muted)" }}>
               {t("action.cancel")}
             </button>
             <button
+              type="button"
               onClick={() => {
                 syncAutostart(autostart);
                 onSave({ ...settings, apiKey, nsfwEnabled, sketchyEnabled, autostart }, hero, rec);

@@ -67,6 +67,8 @@ export default function Select<T extends string | number>({ value, options, onCh
         ref={triggerRef}
         type="button"
         onClick={toggle}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm outline-none transition-colors"
         style={{ borderColor: "var(--color-border)", background: "var(--color-surface)", color: "var(--color-ink)" }}
       >
@@ -86,20 +88,24 @@ export default function Select<T extends string | number>({ value, options, onCh
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97 }}
               transition={{ duration: 0.14, ease: "easeOut" }}
-              className="glass-strong fixed z-[200] max-h-[280px] overflow-y-auto rounded-2xl p-1.5 shadow-2xl"
+              role="listbox"
+              className="glass-strong fixed z-[200] max-h-[280px] overflow-y-auto rounded-2xl p-1.5"
               style={{ top: pos.top, left: pos.left, width: pos.width }}
             >
               {options.map((o) => (
                 <button
                   key={o.value}
+                  type="button"
+                  role="option"
+                  aria-selected={o.value === value}
                   onClick={() => {
                     onChange(o.value);
                     setOpen(false);
                   }}
-                  className="block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-white/10"
+                  className="block w-full rounded-xl px-3 py-2 text-left text-sm transition-colors hover:bg-[var(--color-accent-soft)]"
                   style={{
                     color: o.value === value ? "var(--color-accent)" : "var(--color-ink)",
-                    background: o.value === value ? "rgba(255,255,255,0.06)" : "transparent",
+                    background: o.value === value ? "var(--color-surface-2)" : "transparent",
                   }}
                 >
                   {o.label}

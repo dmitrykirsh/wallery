@@ -250,10 +250,10 @@ export default function Home({
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
         <div className="mb-6 flex flex-wrap justify-center gap-2">
           {QUICK_LINKS.map((link) => (
-            <motion.span
+            <motion.button
               key={link.key}
+              type="button"
               whileTap={{ scale: 0.95 }}
-              role="button"
               className="chip"
               onClick={() => onQuickSort(link.sorting, link.topRange)}
             >
@@ -261,7 +261,7 @@ export default function Home({
                 <path d={link.icon} strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {t(link.key)}
-            </motion.span>
+            </motion.button>
           ))}
         </div>
 

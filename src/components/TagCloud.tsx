@@ -22,17 +22,17 @@ export default function TagCloud({ onSelect, includeNsfw }: Props) {
       {visible.map((tag, i) => {
         const sizeClass = SIZE_CLASSES[(i * 7 + tag.length) % SIZE_CLASSES.length];
         return (
-          <span
+          <button
             key={tag}
+            type="button"
             onClick={() => onSelect(tag)}
-            role="button"
             className={`cursor-pointer transition-colors hover:!opacity-100 ${sizeClass}`}
             style={{ color: "var(--color-ink-muted)" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-accent)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-ink-muted)")}
           >
             #{tag}
-          </span>
+          </button>
         );
       })}
     </div>

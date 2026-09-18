@@ -120,7 +120,7 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
     }
   }
 
-  const pad = size === "sm" ? "px-1.5 py-1 text-[11px]" : "px-4 py-2 text-sm";
+  const pad = size === "sm" ? "px-1.5 py-1 text-xs" : "px-4 py-2 text-sm";
   const containerClass = fill ? "flex w-full gap-1.5" : "relative flex flex-wrap justify-end gap-1.5";
   const btnWrapClass = fill ? "flex flex-1 overflow-hidden rounded-lg" : "flex overflow-hidden rounded-lg";
   const labelClass = fill ? "flex-1 text-center font-medium" : "font-medium";
@@ -128,35 +128,37 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
   return (
     <div ref={ref} className={containerClass} onClick={(e) => e.stopPropagation()}>
       <motion.div whileTap={{ scale: 0.96 }} className={btnWrapClass} style={{ background: "var(--gradient-accent)" }}>
-        <span role="button" onClick={applySet} className={`${labelClass} ${pad}`} style={{ color: "var(--color-accent-ink)" }}>
+        <button type="button" onClick={applySet} className={`${labelClass} ${pad}`} style={{ color: "var(--color-accent-ink)" }}>
           {busy === "set" ? t("action.setting") : t("action.set")}
-        </span>
-        <span
-          role="button"
+        </button>
+        <button
+          type="button"
           onClick={() => toggleMenu("set")}
+          aria-label={t("menu.monitor")}
           className="flex items-center border-l px-1.5"
           style={{ borderColor: "rgba(0,0,0,0.15)", color: "var(--color-accent-ink)" }}
         >
           <svg width="10" height="10" viewBox="0 0 10 10">
             <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
           </svg>
-        </span>
+        </button>
       </motion.div>
 
       <motion.div whileTap={{ scale: 0.96 }} className={`glass ${btnWrapClass}`}>
-        <span role="button" onClick={() => applySave(folder)} className={`${labelClass} ${pad}`} style={{ color: "var(--color-ink)" }}>
+        <button type="button" onClick={() => applySave(folder)} className={`${labelClass} ${pad}`} style={{ color: "var(--color-ink)" }}>
           {busy === "save" ? t("action.downloading") : t("action.download")}
-        </span>
-        <span
-          role="button"
+        </button>
+        <button
+          type="button"
           onClick={() => toggleMenu("save")}
+          aria-label={t("menu.folder")}
           className="flex items-center border-l px-1.5"
-          style={{ borderColor: "rgba(255,255,255,0.12)", color: "var(--color-ink)" }}
+          style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
         >
           <svg width="10" height="10" viewBox="0 0 10 10">
             <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
           </svg>
-        </span>
+        </button>
       </motion.div>
 
       {open === "set" &&
@@ -168,31 +170,31 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
             initial={{ opacity: 0, scale: 0.94, y: menuPos.origin === "top" ? -6 : 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="glass-strong fixed z-[100] w-56 rounded-2xl p-3 text-left shadow-2xl"
+            className="glass-strong fixed z-[100] w-56 rounded-2xl p-3 text-left"
             style={{ top: menuPos.top, left: menuPos.left }}
           >
-            <p className="mb-1.5 text-[11px] font-medium uppercase" style={{ color: "var(--color-ink-faint)" }}>
+            <p className="mb-1.5 text-xs font-medium uppercase" style={{ color: "var(--color-ink-faint)" }}>
               {t("menu.monitor")}
             </p>
             <div className="mb-3 flex flex-wrap gap-1.5">
-              <span role="button" onClick={() => updatePrefs({ monitor: null })} className="chip" data-active={prefs.monitor === null}>
+              <button type="button" onClick={() => updatePrefs({ monitor: null })} className="chip" data-active={prefs.monitor === null}>
                 {t("menu.all")}
-              </span>
+              </button>
               {monitors.map((m) => (
-                <span key={m.id} role="button" onClick={() => updatePrefs({ monitor: m.id })} className="chip" data-active={prefs.monitor === m.id}>
+                <button key={m.id} type="button" onClick={() => updatePrefs({ monitor: m.id })} className="chip" data-active={prefs.monitor === m.id}>
                   {t("monitor.label")} {m.index}
-                </span>
+                </button>
               ))}
             </div>
 
-            <p className="mb-1.5 text-[11px] font-medium uppercase" style={{ color: "var(--color-ink-faint)" }}>
+            <p className="mb-1.5 text-xs font-medium uppercase" style={{ color: "var(--color-ink-faint)" }}>
               {t("menu.fillStyle")}
             </p>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {STYLES.map((s) => (
-                <span key={s} role="button" onClick={() => updatePrefs({ style: s })} className="chip" data-active={prefs.style === s}>
+                <button key={s} type="button" onClick={() => updatePrefs({ style: s })} className="chip" data-active={prefs.style === s}>
                   {t(`style.${s}` as const)}
-                </span>
+                </button>
               ))}
             </div>
 
@@ -216,10 +218,10 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
             initial={{ opacity: 0, scale: 0.94, y: menuPos.origin === "top" ? -6 : 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="glass-strong fixed z-[100] w-64 rounded-2xl p-3 text-left shadow-2xl"
+            className="glass-strong fixed z-[100] w-64 rounded-2xl p-3 text-left"
             style={{ top: menuPos.top, left: menuPos.left }}
           >
-            <p className="mb-1.5 text-[11px] font-medium uppercase" style={{ color: "var(--color-ink-faint)" }}>
+            <p className="mb-1.5 text-xs font-medium uppercase" style={{ color: "var(--color-ink-faint)" }}>
               {t("menu.folder")}
             </p>
             <p className="mb-2 truncate text-sm" style={{ color: "var(--color-ink-muted)" }} title={folder ?? undefined}>

@@ -299,9 +299,10 @@ export default function FallbackImage({ sources, onLoad, onFallback, allowManual
         e.stopPropagation();
         forceReload();
       }}
+      aria-label={t("crop.forceReload")}
       title={t("crop.forceReload")}
-      className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full backdrop-blur"
-      style={{ background: "rgba(20,18,25,0.65)", color: "var(--color-ink)" }}
+      className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full"
+      style={{ background: "rgba(33,26,22,0.72)", color: "var(--color-ink)" }}
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M3 12a9 9 0 0 1 15.5-6.4M21 12a9 9 0 0 1-15.5 6.4" strokeLinecap="round" />

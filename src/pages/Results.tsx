@@ -136,7 +136,7 @@ export default function Results({
       </div>
 
       {!loading && (
-        <p className="mb-4 text-sm" style={{ color: "var(--color-ink-faint)" }}>
+        <p className="mb-4 text-sm" style={{ color: "var(--color-ink-faint)", fontVariantNumeric: "tabular-nums" }}>
           {total.toLocaleString(lang)} {t("filter.found")}
         </p>
       )}

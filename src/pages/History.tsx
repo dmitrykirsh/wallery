@@ -16,11 +16,11 @@ export default function History({ history, isFavorite, onOpen, onToggleFavorite,
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
       <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-lg font-semibold" style={{ color: "var(--color-ink)" }}>
+        <h1 className="font-serif font-semibold text-heading-lg" style={{ color: "var(--color-ink)" }}>
           {t("history.title")}
         </h1>
         {history.length > 0 && (
-          <button onClick={onClear} className="text-sm underline-offset-2 hover:underline" style={{ color: "var(--color-ink-faint)" }}>
+          <button type="button" onClick={onClear} className="text-sm underline-offset-2 hover:underline" style={{ color: "var(--color-ink-faint)" }}>
             {t("history.clear")}
           </button>
         )}

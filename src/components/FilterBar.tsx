@@ -25,32 +25,31 @@ const CATEGORY_KEY: Record<Category, "filter.general" | "filter.anime" | "filter
 };
 
 interface PillColor {
-  gradient: string;
+  fill: string;
   border: string;
-  glow: string;
 }
 
+// Decorative differentiation only (category), or aligned with the same
+// purity colors used on the wallpaper card badge (sketchy/nsfw) so the same
+// state reads as the same color everywhere in the app, not just here.
 const CATEGORY_COLORS: Record<Category, PillColor> = {
-  general: { gradient: "linear-gradient(135deg, #6f8aa8, #55708a)", border: "#5f7690", glow: "rgba(95,118,144,0.22)" },
-  anime: { gradient: "linear-gradient(135deg, #a8859a, #8a687c)", border: "#93707f", glow: "rgba(147,112,127,0.22)" },
-  people: { gradient: "linear-gradient(135deg, #9089a8, #736c8c)", border: "#7d7593", glow: "rgba(125,117,147,0.22)" },
+  general: { fill: "#4a3d31", border: "#8a7660" },
+  anime: { fill: "#4a3238", border: "#96707a" },
+  people: { fill: "#463d26", border: "#8f7a4f" },
 };
 
 const PURITY_COLORS: Record<Purity, PillColor> = {
-  sfw: { gradient: "linear-gradient(135deg, #7ba38e, #5f8672)", border: "#688f79", glow: "rgba(104,143,121,0.22)" },
-  sketchy: { gradient: "linear-gradient(135deg, #b39868, #96794c)", border: "#a08356", glow: "rgba(160,131,86,0.22)" },
-  nsfw: { gradient: "linear-gradient(135deg, #ac7373, #8c5657)", border: "#966163", glow: "rgba(150,97,99,0.22)" },
+  sfw: { fill: "#333b31", border: "#7c8b79" },
+  sketchy: { fill: "#3d301a", border: "#c9963d" },
+  nsfw: { fill: "#33201a", border: "#c05a3e" },
 };
-
-const COLORED_INK = "var(--color-ink)";
 
 function coloredChipStyle(active: boolean, color: PillColor): React.CSSProperties | undefined {
   if (!active) return undefined;
   return {
-    background: color.gradient,
+    background: color.fill,
     borderColor: color.border,
-    color: COLORED_INK,
-    boxShadow: `0 2px 10px ${color.glow}, inset 0 1px 0 rgba(255,255,255,0.15)`,
+    color: "var(--color-ink)",
   };
 }
 
@@ -89,24 +88,19 @@ const ICONS = {
  * gradient fill + glow, matching the chips in the main toolbar. */
 function OptionPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <motion.span
+    <motion.button
+      type="button"
       whileTap={{ scale: 0.95 }}
-      role="button"
       onClick={onClick}
       className="cursor-pointer whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
       style={
         active
-          ? {
-              background: "var(--gradient-accent)",
-              borderColor: "var(--color-accent)",
-              color: "var(--color-accent-ink)",
-              boxShadow: "0 2px 10px rgba(227,164,88,0.3), inset 0 1px 0 rgba(255,255,255,0.3)",
-            }
-          : { background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink-muted)" }
+          ? { background: "var(--gradient-accent)", borderColor: "var(--color-accent)", color: "var(--color-accent-ink)" }
+          : { background: "var(--color-surface-2)", borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }
       }
     >
       {children}
-    </motion.span>
+    </motion.button>
   );
 }
 
@@ -187,36 +181,36 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
   return (
     <div className="glass-strong flex flex-wrap items-center gap-1.5 rounded-2xl p-2">
       {(Object.keys(CATEGORY_KEY) as Category[]).map((cat) => (
-        <motion.span
+        <motion.button
           key={cat}
+          type="button"
           whileTap={{ scale: 0.96 }}
-          role="button"
           className="chip"
           data-active={filters.categories[cat]}
           style={coloredChipStyle(filters.categories[cat], CATEGORY_COLORS[cat])}
           onClick={() => toggleCategory(cat)}
         >
           {t(CATEGORY_KEY[cat])}
-        </motion.span>
+        </motion.button>
       ))}
 
-      <span className="mx-1 h-5 w-px" style={{ background: "rgba(255,255,255,0.1)" }} />
+      <span className="mx-1 h-5 w-px" style={{ background: "var(--color-border)" }} />
 
       {purities.map((p) => (
-        <motion.span
+        <motion.button
           key={p}
+          type="button"
           whileTap={{ scale: 0.96 }}
-          role="button"
           className="chip"
           data-active={filters.purities[p]}
           style={coloredChipStyle(filters.purities[p], PURITY_COLORS[p])}
           onClick={() => togglePurity(p)}
         >
           {p.toUpperCase()}
-        </motion.span>
+        </motion.button>
       ))}
 
-      <span className="mx-1 h-5 w-px" style={{ background: "rgba(255,255,255,0.1)" }} />
+      <span className="mx-1 h-5 w-px" style={{ background: "var(--color-border)" }} />
 
       <Dropdown label={t("filter.resolution")} icon={ICONS.resolution} active={!!filters.atleast || filters.resolutions.length > 0}>
         <div className="mb-3 flex gap-1.5">
@@ -227,13 +221,13 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
             {t("filter.exactly")}
           </OptionPill>
         </div>
-        <p className="mb-3 px-0.5 text-[11px]" style={{ color: "var(--color-ink-faint)" }}>
+        <p className="mb-3 px-0.5 text-xs" style={{ color: "var(--color-ink-faint)" }}>
           {t("filter.yourScreenIs")} <strong style={{ color: "var(--color-ink)" }}>{screenResolution()}</strong>
         </p>
         <div className="grid w-[440px] grid-cols-5 gap-x-3 gap-y-1">
           {RESOLUTION_GROUPS.map((group) => (
             <div key={group.label} className="flex flex-col gap-1">
-              <p className="px-0.5 text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+              <p className="px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
                 {group.label === "Ultrawide" ? t("filter.ultrawide") : group.label}
               </p>
               {group.values.map((res) => (
@@ -248,7 +242,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
             </div>
           ))}
         </div>
-        <p className="mb-2 mt-3 px-0.5 text-[11px] font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+        <p className="mb-2 mt-3 px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
           {t("filter.customResolution")}
         </p>
         <div className="flex items-center gap-1.5">
@@ -259,7 +253,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
             onChange={(e) => setCustomW(e.target.value)}
             placeholder="1920"
             className="w-20 rounded-lg border px-2 py-1 text-xs"
-            style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink)" }}
+            style={{ background: "var(--color-surface-2)", borderColor: "var(--color-border)", color: "var(--color-ink)" }}
           />
           <span style={{ color: "var(--color-ink-faint)" }}>×</span>
           <input
@@ -269,7 +263,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
             onChange={(e) => setCustomH(e.target.value)}
             placeholder="1080"
             className="w-20 rounded-lg border px-2 py-1 text-xs"
-            style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink)" }}
+            style={{ background: "var(--color-surface-2)", borderColor: "var(--color-border)", color: "var(--color-ink)" }}
           />
           <button
             onClick={applyCustomResolution}
@@ -293,7 +287,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
         <div className="grid w-[300px] grid-cols-4 gap-x-2 gap-y-1">
           {RATIO_GROUPS.map((group) => (
             <div key={group.label} className="flex flex-col gap-1">
-              <p className="px-0.5 text-[10px] font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+              <p className="px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
                 {group.label === "Wide" ? t("filter.wide") : group.label === "Ultrawide" ? t("filter.ultrawide") : group.label === "Portrait" ? t("filter.portrait") : t("filter.square")}
               </p>
               {group.values.map((value) => {
@@ -314,7 +308,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
           <button
             onClick={() => pickColor(null)}
             className="col-span-6 mb-1 rounded-lg py-1 text-xs"
-            style={{ background: "rgba(255,255,255,0.06)", color: "var(--color-ink-muted)" }}
+            style={{ background: "var(--color-surface-2)", color: "var(--color-ink-muted)" }}
           >
             {t("action.reset")}
           </button>
@@ -326,8 +320,8 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
               className="h-6 w-6 rounded-full border-2"
               style={{
                 background: `#${c}`,
-                borderColor: filters.colors[0] === c ? "white" : "transparent",
-                boxShadow: filters.colors[0] === c ? `0 0 0 2px var(--color-accent)` : "inset 0 0 0 1px rgba(255,255,255,0.15)",
+                borderColor: filters.colors[0] === c ? "var(--color-ink)" : "transparent",
+                boxShadow: filters.colors[0] === c ? `0 0 0 2px var(--color-accent)` : "inset 0 0 0 1px var(--color-border)",
               }}
               title={`#${c}`}
             />
@@ -336,7 +330,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
       </Dropdown>
 
       <Dropdown label={isHotSort ? t("quick.hot") : t(`sort.${filters.sorting}` as const)} icon={ICONS.sort}>
-        <p className="mb-2 px-0.5 text-[11px] font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+        <p className="mb-2 px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
           {t("filter.sorting")}
         </p>
         <div className="flex max-w-[220px] flex-wrap gap-1.5">
@@ -355,9 +349,9 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
         </div>
       </Dropdown>
 
-      {filters.sorting === "toplist" && (
+      {filters.sorting === "toplist" && !isHotSort && (
         <Dropdown label={t(`range.${filters.topRange}` as const)} icon={ICONS.period}>
-          <p className="mb-2 px-0.5 text-[11px] font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+          <p className="mb-2 px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
             {t("filter.period")}
           </p>
           <div className="flex max-w-[220px] flex-wrap gap-1.5">
@@ -370,16 +364,17 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
         </Dropdown>
       )}
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.9 }}
-        role="button"
         className="chip"
+        aria-label={t("filter.sortDirection")}
         onClick={() => onChange({ ...filters, order: filters.order === "desc" ? "asc" : "desc" })}
       >
         <motion.span animate={{ rotate: filters.order === "desc" ? 0 : 180 }} transition={{ duration: 0.2 }}>
           ↓
         </motion.span>
-      </motion.span>
+      </motion.button>
     </div>
   );
 }

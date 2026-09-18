@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Wallpaper } from "../lib/types";
 import WallpaperCard from "./WallpaperCard";
 import type { ContextMenuAction } from "./ContextMenu";
+import { useLang } from "../lib/LangContext";
 
 const ROW_HEIGHT = 190;
 
@@ -35,6 +36,7 @@ export default function WallpaperRow({
   onToggleFavorite,
   onToast,
 }: Props) {
+  const { t } = useLang();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
   function scrollBy(dx: number) {
@@ -70,35 +72,38 @@ export default function WallpaperRow({
 
   return (
     <div className="group/row relative mb-8">
-      <h2
-        role={onTitleClick ? "button" : undefined}
-        onClick={onTitleClick}
-        className={`mb-3 text-sm font-medium uppercase tracking-wide transition-colors ${onTitleClick ? "cursor-pointer hover:!text-[var(--color-accent)]" : ""}`}
-        style={{ color: "var(--color-ink-faint)" }}
-      >
-        {title}
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+        {onTitleClick ? (
+          <button type="button" onClick={onTitleClick} className="cursor-pointer transition-colors hover:!text-[var(--color-accent)]">
+            {title}
+          </button>
+        ) : (
+          title
+        )}
       </h2>
 
-      <span
-        role="button"
+      <button
+        type="button"
         onClick={() => scrollBy(-ROW_HEIGHT * 2)}
+        aria-label={t("nav.scrollLeft")}
         className="glass absolute -left-3 top-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full opacity-0 shadow-lg transition-opacity group-hover/row:opacity-100"
         style={{ color: "var(--color-ink)" }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M15 5l-7 7 7 7" />
         </svg>
-      </span>
-      <span
-        role="button"
+      </button>
+      <button
+        type="button"
         onClick={() => scrollBy(ROW_HEIGHT * 2)}
+        aria-label={t("nav.scrollRight")}
         className="glass absolute -right-3 top-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-full opacity-0 shadow-lg transition-opacity group-hover/row:opacity-100"
         style={{ color: "var(--color-ink)" }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 5l7 7-7 7" />
         </svg>
-      </span>
+      </button>
 
       <div
         ref={scrollerRef}

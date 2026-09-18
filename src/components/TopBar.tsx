@@ -41,10 +41,11 @@ export default function TopBar({
 
   return (
     <header className="glass-strong sticky top-0 z-40 flex items-center gap-4 px-6 py-3">
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.92 }}
-        role="button"
         onClick={onLogo}
+        aria-label="Wallery"
         title="Wallery"
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
         style={{ background: "var(--gradient-accent)" }}
@@ -59,29 +60,30 @@ export default function TopBar({
             strokeLinejoin="round"
           />
         </svg>
-      </motion.span>
+      </motion.button>
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={canGoBack ? { scale: 0.9 } : undefined}
-        role="button"
-        onClick={canGoBack ? onBack : undefined}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors"
+        onClick={onBack}
+        disabled={!canGoBack}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors disabled:cursor-default"
         style={{
-          borderColor: "rgba(255,255,255,0.08)",
+          borderColor: "var(--color-border)",
           color: canGoBack ? "var(--color-ink-muted)" : "var(--color-ink-faint)",
           opacity: canGoBack ? 1 : 0.4,
-          cursor: canGoBack ? "pointer" : "default",
         }}
+        aria-label={t("nav.back")}
         title={t("nav.back")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M15 5l-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      </motion.span>
+      </motion.button>
 
       <form
         className="flex flex-1 items-center gap-2 rounded-full border px-4 py-2"
-        style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)" }}
+        style={{ borderColor: "var(--color-border)", background: "var(--color-surface-2)" }}
         onSubmit={(e) => {
           e.preventDefault();
           onSearch(value.trim());
@@ -100,12 +102,13 @@ export default function TopBar({
         />
       </form>
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.9 }}
-        role="button"
         onClick={onOpenFavorites}
         className="relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-        style={{ borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink-muted)" }}
+        style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
+        aria-label={t("nav.favorites")}
         title={t("nav.favorites")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -113,34 +116,36 @@ export default function TopBar({
         </svg>
         {favoritesCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium"
-            style={{ background: "var(--color-favorite)", color: "#1c1408" }}
+            className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs font-medium"
+            style={{ background: "var(--color-favorite)", color: "var(--color-accent-ink)", fontVariantNumeric: "tabular-nums" }}
           >
             {favoritesCount}
           </span>
         )}
-      </motion.span>
+      </motion.button>
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.9 }}
-        role="button"
         onClick={onOpenHistory}
         className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-        style={{ borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink-muted)" }}
+        style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
+        aria-label={t("nav.history")}
         title={t("nav.history")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <rect x="3.5" y="7.5" width="13" height="13" rx="2" />
           <path d="M7.5 7.5V5.5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" strokeLinejoin="round" />
         </svg>
-      </motion.span>
+      </motion.button>
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.9 }}
-        role="button"
         onClick={onOpenSlideshow}
         className="relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-        style={{ borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink-muted)" }}
+        style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
+        aria-label={t("nav.slideshow")}
         title={t("nav.slideshow")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -153,14 +158,15 @@ export default function TopBar({
             style={{ background: "var(--gradient-accent)" }}
           />
         )}
-      </motion.span>
+      </motion.button>
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.9 }}
-        role="button"
         onClick={onOpenWidgets}
         className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-        style={{ borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink-muted)" }}
+        style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
+        aria-label={t("nav.widgets")}
         title={t("nav.widgets")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -169,14 +175,15 @@ export default function TopBar({
           <rect x="3.5" y="13.5" width="7" height="7" rx="1.6" />
           <rect x="13.5" y="13.5" width="7" height="7" rx="1.6" />
         </svg>
-      </motion.span>
+      </motion.button>
 
-      <motion.span
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.9 }}
-        role="button"
         onClick={onOpenSettings}
         className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors"
-        style={{ borderColor: "rgba(255,255,255,0.08)", color: "var(--color-ink-muted)" }}
+        style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
+        aria-label={t("nav.settings")}
         title={t("nav.settings")}
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
@@ -188,7 +195,7 @@ export default function TopBar({
             strokeLinejoin="round"
           />
         </svg>
-      </motion.span>
+      </motion.button>
     </header>
   );
 }

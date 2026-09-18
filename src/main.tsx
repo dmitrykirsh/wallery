@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import WidgetOverlay from "./components/widgets/WidgetOverlay";
 import { LangProvider } from "./lib/LangContext";
-import { HoverBackgroundProvider } from "./lib/HoverBackgroundContext";
 import "./index.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
@@ -25,9 +24,7 @@ if (widgetMatch) {
   root.render(
     <React.StrictMode>
       <LangProvider>
-        <HoverBackgroundProvider>
-          <App />
-        </HoverBackgroundProvider>
+        <App />
       </LangProvider>
     </React.StrictMode>,
   );

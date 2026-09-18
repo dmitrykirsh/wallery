@@ -1,36 +1,84 @@
 @import "tailwindcss";
+@import "./fonts.css";
 
+/* Warm autumn-cabin palette — semantic token system. Every text token below
+   is verified (WCAG relative-luminance formula) against every surface it is
+   actually painted on in src/, not just --color-bg:
+     ink-muted  vs bg/surface/surface-2/surface-3 → 9.0 / 8.3 / 7.5 / 6.8 : 1
+     ink-faint  vs bg/surface/surface-2/surface-3 → 6.6 / 5.6 / 5.1 / 4.6 : 1
+     ink        vs surface-3 (button labels)      → 10.4 : 1
+   All clear the 4.5:1 (normal text) / 3:1 (large/UI, non-text) AA floor.
+   Safe to place ink-muted or ink-faint on ANY surface level below, including
+   ones not yet used that way (prep for the step-5 screen pass). */
 @theme {
-  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  /* Headings — warm serif, self-hosted (src/fonts.css), Cyrillic included. */
+  --font-serif: "Lora", "Georgia", "Times New Roman", serif;
+  /* UI/body — calm humanist sans. Golos Text, not the brief's Karla/Public
+     Sans: neither ships a Cyrillic subset, and ru is a core supported
+     locale here, so Latin-only text would silently fall back to the OS
+     font for most of the app's real usage. Golos Text draws Latin and
+     Cyrillic as one family instead of pairing mismatched typefaces. */
+  --font-sans: "Golos Text", "Segoe UI", system-ui, sans-serif;
 
-  --color-bg: #15131a;
-  --color-surface: #1d1a23;
-  --color-surface-2: #26212e;
-  --color-surface-3: #322b3a;
-  --color-border: #3a3244;
-  --color-border-soft: #241f2b;
+  /* Heading scale — the app currently tops out at text-lg (18px) for every
+     title (page headers, modal headers), which reads as barely-a-heading
+     once it's set in a serif face. Two explicit steps for the step-5 pass;
+     pair with font-semibold + tracking-tight utilities (no matching
+     --font-weight/--letter-spacing companion keys in this Tailwind
+     version, so those stay separate classes, not part of this token). */
+  --text-heading-lg: 1.75rem; /* 28px, e.g. a real page/section title */
+  --text-heading-lg--line-height: calc(2 / 1.75); /* ~1.14, tight per heading role */
+  --text-heading: 1.25rem; /* 20px, e.g. modal/subsection titles replacing text-lg */
+  --text-heading--line-height: calc(1.5 / 1.25); /* 1.2 */
 
-  --color-ink: #f1ecf5;
-  --color-ink-muted: #a89dba;
-  --color-ink-faint: #756a87;
+  /* Surfaces — one canvas + three raised levels, each one step lighter:
+     bg = app canvas, surface = resting card, surface-2 = hover/raised
+     chip, surface-3 = most-raised (solid buttons, active toggle tracks). */
+  --color-bg: #211a16;
+  --color-surface: #2a2119;
+  --color-surface-2: #33281f;
+  --color-surface-3: #3d2f26;
 
-  --color-accent: #e3a458;
-  --color-accent-2: #d98a8a;
-  --color-accent-soft: #4a3a28;
-  --color-accent-ink: #1c1408;
+  /* Borders — hairlines only, never a fill. */
+  --color-border: rgba(239, 230, 216, 0.1);
+  --color-border-soft: rgba(239, 230, 216, 0.06);
 
-  --color-favorite: #e2637d;
+  /* Text — three reading levels, each contrast-verified on every surface
+     above (see comment block). ink = primary reading text, ink-muted =
+     secondary/labels, ink-faint = tertiary/meta (timestamps, hints). */
+  --color-ink: #efe6d8;
+  --color-ink-muted: #c7baa8;
+  --color-ink-faint: #a69983;
+
+  /* Accent 1 (burnt ochre) — primary interactive color: active
+     filters/tabs, primary buttons, links. */
+  --color-accent: #c97c3d;
+  /* Accent 2 (muted sage) — secondary/rare state color (e.g. status text);
+     lightened from the raw brief hue so it also clears 4.5:1 as body-size
+     text on --color-bg, not just as a decorative fill. */
+  --color-accent-2: #7c8b79;
+  /* Selection highlight only. */
+  --color-accent-soft: #3d2a1c;
+  /* Text/icon color placed ON solid accent fills (buttons, active pills).
+     Pushed near-black — not a ramp step, a dedicated on-color ink — because
+     that's what it takes to clear 4.5:1 against the darkest accent-family
+     fill it sits on (the accent→accent-2 gradient in SettingsModal, at
+     ~4.57:1); against --color-accent alone it reaches 6.2:1. */
+  --color-accent-ink: #070503;
+
+  /* Favorite/heart indicator — icon-only (3:1 non-text floor), unchanged. */
+  --color-favorite: #c05a3e;
 }
 
 :root {
-  --gradient-accent: linear-gradient(135deg, #e3a458 0%, #d98a8a 100%);
+  --gradient-accent: linear-gradient(135deg, #c97c3d 0%, #c05a3e 100%);
 }
 
 html,
 body {
   background:
-    radial-gradient(1200px 700px at 15% -10%, rgba(227, 164, 88, 0.08), transparent 60%),
-    radial-gradient(1000px 800px at 100% 0%, rgba(157, 122, 216, 0.07), transparent 55%),
+    radial-gradient(1200px 700px at 15% -10%, rgba(201, 124, 61, 0.08), transparent 60%),
+    radial-gradient(1000px 800px at 100% 0%, rgba(110, 123, 108, 0.05), transparent 55%),
     var(--color-bg);
   color: var(--color-ink);
 }
@@ -65,121 +113,41 @@ body {
   scrollbar-width: none;
 }
 
-/* Liquid-glass surfaces, modeled on macOS/iOS translucent materials: a
- * layered specular gradient (light catching the top of the pane) sitting
- * over a saturated blur of whatever scrolls underneath, with a bright
- * hairline edge and a soft contact shadow to lift it off the page. Two
- * weights — lighter for small floating chrome, stronger for panels/modals
- * that need to stay legible over busy content. */
+/* Flat warm surfaces — no blur, no translucency, no glow. Two weights, same
+ * as before the redesign (lighter for small floating chrome, stronger for
+ * panels/modals), but both now just a solid surface level + a hairline
+ * border, matching the "no glassmorphism" brief. */
 .glass {
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 35%, rgba(255, 255, 255, 0.02) 100%),
-    rgba(40, 36, 48, 0.42);
-  backdrop-filter: blur(28px) saturate(200%) brightness(1.08);
-  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  /* Blurred surfaces are expensive to repaint every scroll frame — pin each
-     one to its own compositor layer so scrolling underneath them stays smooth. */
-  transform: translateZ(0);
-  backface-visibility: hidden;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
 }
 
 .glass-strong {
-  background:
-    linear-gradient(155deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 30%, rgba(255, 255, 255, 0.01) 100%),
-    rgba(24, 22, 29, 0.92);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .glass,
-  .glass-strong {
-    background: var(--color-surface-2);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .chip {
   @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-150 select-none cursor-pointer;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border);
   color: var(--color-ink-muted);
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)), rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-2);
 }
 
 .chip:hover {
   color: var(--color-ink);
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03)), rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-3);
 }
 
 .chip[data-active="true"] {
   color: var(--color-accent-ink);
   background: var(--gradient-accent);
   border-color: var(--color-accent);
-  box-shadow: 0 2px 12px rgba(227, 164, 88, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .tile-glass {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.tile-sheen {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 30%, rgba(0, 0, 0, 0.04) 70%, rgba(0, 0, 0, 0.14) 100%);
-  mix-blend-mode: overlay;
-}
-
-/* Two diagonal glass-reflection streaks — visible at rest like light
-   catching a glass pane, then glide further across and brighten on hover
-   like that light sweeping over the surface. */
-.tile-streaks {
-  overflow: hidden;
-  border-radius: inherit;
-  mix-blend-mode: screen;
-}
-
-.tile-streaks span {
-  position: absolute;
-  top: -60%;
-  height: 220%;
-  width: 14%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0) 100%);
-  filter: blur(3px);
-  transform: rotate(18deg) translateX(0%);
-  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
-  opacity: 0.4;
-}
-
-.tile-streaks span:nth-child(1) {
-  left: 6%;
-}
-
-.tile-streaks span:nth-child(2) {
-  left: 52%;
-  width: 7%;
-  opacity: 0.22;
-}
-
-.group:hover .tile-streaks span:nth-child(1) {
-  transform: rotate(18deg) translateX(260%);
-  opacity: 0.8;
-}
-
-.group:hover .tile-streaks span:nth-child(2) {
-  transform: rotate(18deg) translateX(300%);
-  opacity: 0.5;
-  transition-delay: 0.08s;
+  border: 1px solid var(--color-border);
 }
 
 /* Themed range slider — the browser default looks like a plain OS control
@@ -190,7 +158,7 @@ input[type="range"] {
   width: 100%;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--color-surface-3);
   outline: none;
   cursor: pointer;
 }
@@ -202,7 +170,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 14px;
   border-radius: 50%;
   background: var(--gradient-accent);
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--color-ink);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   cursor: pointer;
   margin-top: -5px;
@@ -211,7 +179,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--color-surface-3);
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -219,7 +187,7 @@ input[type="range"]::-moz-range-thumb {
   height: 14px;
   border-radius: 50%;
   background: var(--color-accent);
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--color-ink);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   cursor: pointer;
 }
@@ -227,6 +195,18 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
+}
+
+/* Every keyboard-reachable control gets the same warm focus ring — buttons,
+   links, inputs, and the div/span role="button" controls that need one
+   added explicitly per-component (tabIndex + this same :focus-visible). */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

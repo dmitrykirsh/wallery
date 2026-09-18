@@ -4,7 +4,7 @@ import type { Wallpaper } from "../lib/types";
 import WallpaperActions from "./WallpaperActions";
 import FallbackImage from "./FallbackImage";
 import ContextMenu, { type ContextMenuAction } from "./ContextMenu";
-import { useHoverBackground } from "../lib/HoverBackgroundContext";
+import { useLang } from "../lib/LangContext";
 
 interface Props {
   wallpaper: Wallpaper;
@@ -32,9 +32,11 @@ interface Props {
 
 // A quiet purity indicator right on the card — muted, not the loud filter-pill
 // colors, since this needs to sit on every single thumbnail without shouting.
-const PURITY_BORDER: Record<string, { border: string; glow: string }> = {
-  sketchy: { border: "#e0ab3f", glow: "rgba(224,171,63,0.55)" },
-  nsfw: { border: "#ef4b53", glow: "rgba(239,75,83,0.55)" },
+// The badge label carries the meaning; the border is a secondary color cue,
+// never the only one (color alone doesn't reach colorblind/low-vision users).
+const PURITY_BADGE: Record<string, { border: string; label: string }> = {
+  sketchy: { border: "#c9963d", label: "S" },
+  nsfw: { border: "#c05a3e", label: "18+" },
 };
 
 export default function WallpaperCard({
@@ -54,8 +56,8 @@ export default function WallpaperCard({
   const sizeStyle = fixedHeight
     ? { height: fixedHeight, width: fixedHeight * aspect }
     : { aspectRatio: `${wallpaper.dimension_x} / ${wallpaper.dimension_y}`, width: "100%" };
-  const { setImage } = useHoverBackground();
-  const purityStyle = PURITY_BORDER[wallpaper.purity];
+  const { t } = useLang();
+  const purityBadge = PURITY_BADGE[wallpaper.purity];
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   function handleContextMenu(e: React.MouseEvent) {
@@ -64,20 +66,30 @@ export default function WallpaperCard({
     setMenuPos({ x: e.clientX, y: e.clientY });
   }
 
+  // A div, not a button: the card needs to contain its own focusable action
+  // buttons (favorite, upvote/downvote, set/download), and a <button> can't
+  // legally nest other buttons. role="button" + tabIndex + this handler give
+  // it the same keyboard behavior a native button would have.
   return (
-    <motion.button
+    <motion.div
       layout
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
+      role="button"
+      tabIndex={0}
+      aria-label={wallpaper.resolution}
       onClick={() => onOpen(wallpaper)}
-      onMouseEnter={() => setImage(wallpaper.thumbs.small)}
-      onMouseLeave={() => setImage(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(wallpaper);
+        }
+      }}
       onContextMenu={handleContextMenu}
-      className={`group relative block overflow-hidden rounded-2xl border text-left ${fixedHeight ? "shrink-0" : "mb-4 w-full"}`}
+      className={`group relative block cursor-pointer overflow-hidden rounded-2xl border text-left ${fixedHeight ? "shrink-0" : "mb-4 w-full"}`}
       style={{
-        borderColor: purityStyle?.border ?? "var(--color-border-soft)",
-        boxShadow: purityStyle ? `0 0 10px ${purityStyle.glow}, inset 0 0 0 1px ${purityStyle.border}` : undefined,
+        borderColor: purityBadge?.border ?? "var(--color-border-soft)",
         background: "var(--color-surface)",
         ...sizeStyle,
       }}
@@ -96,57 +108,72 @@ export default function WallpaperCard({
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/10 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
       <div
-        className="glass pointer-events-none absolute top-2 right-2 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        className="glass pointer-events-none absolute top-2 right-2 rounded-md px-1.5 py-0.5 text-xs font-medium opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        style={{ color: "var(--color-ink)" }}
       >
         {wallpaper.resolution}
       </div>
 
-      <motion.span
-        whileTap={{ scale: 0.85 }}
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite(wallpaper);
-        }}
-        role="button"
-        className={`glass absolute top-2 left-2 flex h-7 w-7 items-center justify-center rounded-full transition-opacity duration-200 ${
-          favorite ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-        }`}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill={favorite ? "var(--color-favorite)" : "none"} stroke={favorite ? "var(--color-favorite)" : "white"} strokeWidth="2">
-          <path d="M12 21s-7.5-4.6-10-9.3C0.3 8 1.7 4 5.6 3.2 8 2.7 10.4 4 12 6.3 13.6 4 16 2.7 18.4 3.2 22.3 4 23.7 8 22 11.7 19.5 16.4 12 21 12 21Z" />
-        </svg>
-      </motion.span>
+      <div className="absolute top-2 left-2 flex items-center gap-1.5">
+        {purityBadge && (
+          <span
+            className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-xs font-semibold"
+            style={{ background: purityBadge.border, color: "var(--color-accent-ink)" }}
+            title={wallpaper.purity}
+          >
+            {purityBadge.label}
+          </span>
+        )}
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.85 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(wallpaper);
+          }}
+          aria-label={t("lightbox.favoriteHint")}
+          className={`glass flex h-7 w-7 items-center justify-center rounded-full transition-opacity duration-200 ${
+            favorite ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={favorite ? "var(--color-favorite)" : "none"} stroke={favorite ? "var(--color-favorite)" : "var(--color-ink)"} strokeWidth="2">
+            <path d="M12 21s-7.5-4.6-10-9.3C0.3 8 1.7 4 5.6 3.2 8 2.7 10.4 4 12 6.3 13.6 4 16 2.7 18.4 3.2 22.3 4 23.7 8 22 11.7 19.5 16.4 12 21 12 21Z" />
+          </svg>
+        </motion.button>
+      </div>
 
       <div className="absolute bottom-2 left-2 right-2 flex flex-wrap items-end justify-between gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
         {(onUpvote || onDownvote) && (
           <div className="pointer-events-auto flex gap-1.5" onClick={(e) => e.stopPropagation()}>
             {onUpvote && (
-              <motion.span
+              <motion.button
+                type="button"
                 whileTap={{ scale: 0.85 }}
                 onClick={() => onUpvote(wallpaper)}
-                role="button"
+                aria-label={upvoteTitle}
                 title={upvoteTitle}
                 className="glass flex h-7 w-7 items-center justify-center rounded-full"
-                style={{ color: "white" }}
+                style={{ color: "var(--color-ink)" }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </motion.span>
+              </motion.button>
             )}
             {onDownvote && (
-              <motion.span
+              <motion.button
+                type="button"
                 whileTap={{ scale: 0.85 }}
                 onClick={() => onDownvote(wallpaper)}
-                role="button"
+                aria-label={downvoteTitle}
                 title={downvoteTitle}
                 className="glass flex h-7 w-7 items-center justify-center rounded-full"
-                style={{ color: "white" }}
+                style={{ color: "var(--color-ink)" }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                   <path d="M12 5v14M5 12l7 7 7-7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </motion.span>
+              </motion.button>
             )}
           </div>
         )}
@@ -158,6 +185,6 @@ export default function WallpaperCard({
       {contextMenuActions && (
         <ContextMenu pos={menuPos} actions={contextMenuActions(wallpaper)} onClose={() => setMenuPos(null)} />
       )}
-    </motion.button>
+    </motion.div>
   );
 }
