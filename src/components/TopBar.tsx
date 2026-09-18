@@ -40,7 +40,7 @@ export default function TopBar({
   useEffect(() => setValue(query), [query]);
 
   return (
-    <header className="glass sticky top-0 z-40 flex items-center gap-4 px-6 py-3">
+    <header className="glass-strong sticky top-0 z-40 flex items-center gap-4 px-6 py-3">
       <motion.span
         whileTap={{ scale: 0.92 }}
         role="button"

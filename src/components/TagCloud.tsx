@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { shuffledTags } from "../lib/tags";
 
 // Shown all at once, no progressive reveal — a fixed, scannable count
@@ -12,9 +12,9 @@ interface Props {
 }
 
 export default function TagCloud({ onSelect, includeNsfw }: Props) {
-  // Shuffled once per component mount (i.e. once per app load) so the order
-  // is fresh each time but stable while browsing.
-  const [pool] = useState(() => shuffledTags(includeNsfw));
+  // Re-shuffled when includeNsfw flips (not on every render) so disabling
+  // NSFW actually drops nsfw-leaning tag names from the cloud too.
+  const pool = useMemo(() => shuffledTags(includeNsfw), [includeNsfw]);
   const visible = pool.slice(0, VISIBLE_COUNT);
 
   return (

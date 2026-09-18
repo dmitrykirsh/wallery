@@ -3,16 +3,33 @@ import type { Wallpaper } from "../lib/types";
 import { distributeColumns } from "../lib/masonry";
 import { useColumnCount } from "../lib/useColumnCount";
 import WallpaperCard from "./WallpaperCard";
+import type { ContextMenuAction } from "./ContextMenu";
 
 interface Props {
   wallpapers: Wallpaper[];
   isFavorite: (id: string) => boolean;
+  contextMenuActions?: (wallpaper: Wallpaper) => ContextMenuAction[];
+  onUpvote?: (wallpaper: Wallpaper) => void;
+  onDownvote?: (wallpaper: Wallpaper) => void;
+  upvoteTitle?: string;
+  downvoteTitle?: string;
   onOpen: (wallpaper: Wallpaper, list: Wallpaper[]) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
   onToast: (message: string) => void;
 }
 
-export default function WallpaperGrid({ wallpapers, isFavorite, onOpen, onToggleFavorite, onToast }: Props) {
+export default function WallpaperGrid({
+  wallpapers,
+  isFavorite,
+  contextMenuActions,
+  onUpvote,
+  onDownvote,
+  upvoteTitle,
+  downvoteTitle,
+  onOpen,
+  onToggleFavorite,
+  onToast,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const columnCount = useColumnCount(ref);
   const columns = useMemo(() => distributeColumns(wallpapers, columnCount), [wallpapers, columnCount]);
@@ -26,6 +43,11 @@ export default function WallpaperGrid({ wallpapers, isFavorite, onOpen, onToggle
               key={w.id}
               wallpaper={w}
               favorite={isFavorite(w.id)}
+              contextMenuActions={contextMenuActions}
+              onUpvote={onUpvote}
+              onDownvote={onDownvote}
+              upvoteTitle={upvoteTitle}
+              downvoteTitle={downvoteTitle}
               onOpen={(wallpaper) => onOpen(wallpaper, wallpapers)}
               onToggleFavorite={onToggleFavorite}
               onToast={onToast}

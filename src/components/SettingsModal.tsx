@@ -4,9 +4,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import type { Settings } from "../lib/settings";
 import { HERO_CUSTOM_SORTING_VALUES, type HeroMode, type HeroSettings } from "../lib/heroSettings";
 import type { RecommendationSettings } from "../lib/recommendationSettings";
+import { RESOLUTION_GROUPS, RATIOS, RATIO_GROUPS, LANDSCAPE_RATIOS, PORTRAIT_RATIOS } from "../lib/filters";
+import type { Category, Purity } from "../lib/types";
 import { shuffledTags } from "../lib/tags";
 import { isTauri, quitApp, setAutostart as syncAutostart } from "../lib/tauri";
 import { exportAllData, importAllData } from "../lib/dataBackup";
+import { getBlockedTags, blockTag, unblockTag } from "../lib/recommendationEngine";
 import { useLang } from "../lib/LangContext";
 import { LANGUAGES } from "../lib/i18n";
 
@@ -88,6 +91,8 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
   const [hero, setHero] = useState<HeroSettings>(heroSettings);
   const [rec, setRec] = useState<RecommendationSettings>(recommendationSettings);
   const [tagDraft, setTagDraft] = useState("");
+  const [blockedTags, setBlockedTags] = useState<string[]>(() => [...getBlockedTags()]);
+  const [blockDraft, setBlockDraft] = useState("");
   // Shuffled once per modal open so the picker offers a fresh spread each
   // time without needing to re-fetch or infinitely scroll anything.
   const [suggestedTags] = useState(() => shuffledTags(nsfwEnabled).slice(0, 60));
@@ -111,6 +116,50 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
   function toggleRecTag(tag: string) {
     if (rec.customTags.includes(tag)) removeRecTag(tag);
     else addRecTag(tag);
+  }
+
+  function addBlockedTag(raw: string) {
+    const tag = raw.trim().toLowerCase();
+    if (!tag) return;
+    blockTag(tag);
+    setBlockedTags([...getBlockedTags()]);
+    setBlockDraft("");
+  }
+
+  function removeBlockedTag(tag: string) {
+    unblockTag(tag);
+    setBlockedTags([...getBlockedTags()]);
+  }
+
+  function toggleRecCategory(cat: Category) {
+    setRec((prev) => {
+      const next = { ...prev.categories, [cat]: !prev.categories[cat] };
+      if (Object.values(next).every((v) => !v)) return prev;
+      return { ...prev, categories: next };
+    });
+  }
+
+  function toggleRecPurity(p: Purity) {
+    setRec((prev) => {
+      const next = { ...prev.purities, [p]: !prev.purities[p] };
+      if (Object.values(next).every((v) => !v)) return prev;
+      return { ...prev, purities: next };
+    });
+  }
+
+  function pickRecAtLeast(res: string) {
+    setRec((prev) => ({ ...prev, atleast: prev.atleast === res ? null : res }));
+  }
+
+  function toggleRecRatio(ratio: string) {
+    setRec((prev) => ({ ...prev, ratios: prev.ratios.includes(ratio) ? prev.ratios.filter((r) => r !== ratio) : [...prev.ratios, ratio] }));
+  }
+
+  function setRecRatioGroup(group: string[]) {
+    setRec((prev) => {
+      const isActive = group.every((r) => prev.ratios.includes(r)) && prev.ratios.length === group.length;
+      return { ...prev, ratios: isActive ? [] : group };
+    });
   }
 
   return (
@@ -247,6 +296,88 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               </div>
             </div>
           )}
+
+          <div className="mt-4 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+              {t("settings.recFilters")}
+            </p>
+
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {(["general", "anime", "people"] as Category[]).map((cat) => (
+                <span key={cat} role="button" onClick={() => toggleRecCategory(cat)} className="chip" data-active={rec.categories[cat]}>
+                  {t(`filter.${cat}` as const)}
+                </span>
+              ))}
+              <span className="mx-1 h-5 w-px self-center" style={{ background: "var(--color-border)" }} />
+              {(["sfw", ...(sketchyEnabled ? (["sketchy"] as const) : []), ...(nsfwEnabled ? (["nsfw"] as const) : [])] as Purity[]).map((p) => (
+                <span key={p} role="button" onClick={() => toggleRecPurity(p)} className="chip" data-active={rec.purities[p]}>
+                  {p.toUpperCase()}
+                </span>
+              ))}
+            </div>
+
+            <p className="mb-1.5 text-xs" style={{ color: "var(--color-ink-faint)" }}>
+              {t("filter.atLeast")}
+            </p>
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {RESOLUTION_GROUPS.flatMap((g) => g.values).map((res) => (
+                <span key={res} role="button" onClick={() => pickRecAtLeast(res)} className="chip" data-active={rec.atleast === res}>
+                  {res}
+                </span>
+              ))}
+            </div>
+
+            <p className="mb-1.5 text-xs" style={{ color: "var(--color-ink-faint)" }}>
+              {t("filter.ratio")}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <span role="button" onClick={() => setRecRatioGroup(LANDSCAPE_RATIOS)} className="chip" data-active={LANDSCAPE_RATIOS.every((r) => rec.ratios.includes(r)) && rec.ratios.length === LANDSCAPE_RATIOS.length}>
+                {t("filter.allWide")}
+              </span>
+              <span role="button" onClick={() => setRecRatioGroup(PORTRAIT_RATIOS)} className="chip" data-active={PORTRAIT_RATIOS.every((r) => rec.ratios.includes(r)) && rec.ratios.length === PORTRAIT_RATIOS.length}>
+                {t("filter.allPortrait")}
+              </span>
+              {RATIO_GROUPS.flatMap((g) => g.values).map((value) => {
+                const r = RATIOS.find((x) => x.value === value);
+                return (
+                  <span key={value} role="button" onClick={() => toggleRecRatio(value)} className="chip" data-active={rec.ratios.includes(value)}>
+                    {r?.label ?? value}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-4 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
+              {t("settings.recBlockedTags")}
+            </p>
+            <p className="mb-2 text-xs" style={{ color: "var(--color-ink-faint)" }}>
+              {t("settings.recBlockedHint")}
+            </p>
+            {blockedTags.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {blockedTags.map((tag) => (
+                  <motion.span key={tag} whileTap={{ scale: 0.95 }} role="button" onClick={() => removeBlockedTag(tag)} className="chip" data-active="true">
+                    #{tag} ✕
+                  </motion.span>
+                ))}
+              </div>
+            )}
+            <input
+              value={blockDraft}
+              onChange={(e) => setBlockDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addBlockedTag(blockDraft);
+                }
+              }}
+              placeholder={t("settings.recBlockedPlaceholder")}
+              className="w-full rounded-lg border px-3 py-2 text-sm outline-none"
+              style={{ borderColor: "var(--color-border)", background: "var(--color-surface)", color: "var(--color-ink)" }}
+            />
+          </div>
         </div>
 
         <p className="mb-4 mt-3 text-sm" style={{ color: "var(--color-ink-muted)" }}>

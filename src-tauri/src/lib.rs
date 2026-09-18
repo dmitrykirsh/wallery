@@ -344,7 +344,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--autostart".into()]),
+        ))
         .invoke_handler(tauri::generate_handler![
             api_get,
             set_wallpaper,
@@ -387,6 +390,17 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // The main window is created hidden (see tauri.conf.json) so a
+            // normal launch can show it with no flash of an unstyled/empty
+            // frame; autostart's whole point is to start quietly in the
+            // tray, so it's the one case that skips this and stays hidden.
+            let launched_via_autostart = std::env::args().any(|a| a == "--autostart");
+            if !launched_via_autostart {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.show();
+                }
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

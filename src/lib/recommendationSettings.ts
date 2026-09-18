@@ -5,11 +5,22 @@ export interface RecommendationSettings {
    * the auto-computed favorites + search history. */
   useCustomTags: boolean;
   customTags: string[];
+  /** Narrows every recommendation query — same shape as the main search
+   * filters, but scoped just to this row so it doesn't have to match
+   * whatever's currently selected in Results. */
+  categories: { general: boolean; anime: boolean; people: boolean };
+  purities: { sfw: boolean; sketchy: boolean; nsfw: boolean };
+  atleast: string | null;
+  ratios: string[];
 }
 
 const defaults: RecommendationSettings = {
   useCustomTags: false,
   customTags: [],
+  categories: { general: true, anime: true, people: true },
+  purities: { sfw: true, sketchy: true, nsfw: true },
+  atleast: null,
+  ratios: [],
 };
 
 export function loadRecommendationSettings(): RecommendationSettings {

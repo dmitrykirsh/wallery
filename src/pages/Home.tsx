@@ -8,15 +8,8 @@ import type { ContextMenuAction } from "../components/ContextMenu";
 import { searchWallpapers } from "../lib/api";
 import { defaultFilters } from "../lib/filters";
 import { dedupeById } from "../lib/dedupe";
-import {
-  pickRecommendationTerms,
-  pickSortAndPage,
-  filterExcluded,
-  preferUnseen,
-  recordShown,
-  excludeWallpaper,
-  bumpTagWeight,
-} from "../lib/recommendationEngine";
+import { excludeWallpaper, bumpTagStats } from "../lib/recommendationEngine";
+import { useRecommendationFeed } from "../lib/useRecommendationFeed";
 import { useLang } from "../lib/LangContext";
 import type { HeroMode, HeroSettings } from "../lib/heroSettings";
 import type { RecommendationSettings } from "../lib/recommendationSettings";
@@ -32,6 +25,7 @@ interface Props {
   isFavorite: (id: string) => boolean;
   onSelectTag: (tag: string) => void;
   onQuickSort: (sorting: Sorting, topRange?: TopRange) => void;
+  onOpenRecommendations: () => void;
   onOpen: (wallpaper: Wallpaper, list: Wallpaper[]) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
   onToast: (message: string) => void;
@@ -63,23 +57,6 @@ function heroFilters(h: HeroSettings): Filters {
   return { ...defaultFilters(), purities, sorting: "toplist", topRange: "1w" };
 }
 
-/** Concatenating each term's whole page (term1 x10, then term2 x10, ...)
- * reads like separate blocks; interleaving mixes them into one feed. */
-function interleave<T>(lists: T[][]): T[] {
-  const result: T[] = [];
-  const max = Math.max(0, ...lists.map((l) => l.length));
-  for (let i = 0; i < max; i++) {
-    for (const list of lists) if (list[i] !== undefined) result.push(list[i]);
-  }
-  return result;
-}
-
-interface TermPaging {
-  page: number;
-  lastPage: number;
-  sorting: Sorting;
-}
-
 // Fetching only a handful of pages meant the hero kept reshuffling through
 // the same small pool for the whole session. Pull a moderate initial pool
 // (kept modest since this fires as a burst alongside the recommendation
@@ -101,6 +78,7 @@ export default function Home({
   isFavorite,
   onSelectTag,
   onQuickSort,
+  onOpenRecommendations,
   onOpen,
   onToggleFavorite,
   onToast,
@@ -108,10 +86,6 @@ export default function Home({
   const { t } = useLang();
   const [hero, setHero] = useState<Wallpaper[]>([]);
   const [heroEmpty, setHeroEmpty] = useState(false);
-  const [recTerms, setRecTerms] = useState<string[]>([]);
-  const [recWallpapers, setRecWallpapers] = useState<Wallpaper[]>([]);
-  const [recLoading, setRecLoading] = useState(true);
-  const [recLoadingMore, setRecLoadingMore] = useState(false);
   // A small in-memory cache per hero config so switching Hot/Toplist/Latest
   // shows the last-seen set instantly instead of blanking the whole widget
   // while a fresh fetch is in flight — it still refreshes silently behind it.
@@ -120,11 +94,27 @@ export default function Home({
   // hero config, so switching config (or a stale in-flight tick) doesn't
   // keep paging the wrong pool.
   const heroGrowthRef = useRef<{ key: string; nextPage: number; lastPage: number }>({ key: "", nextPage: 1, lastPage: 1 });
-  // Per-term pagination for "load more" — each recommendation term is
-  // fetched (and paginated) independently and merged, rather than ANDed
-  // into one combined query, which would both starve the total result
-  // count and often return zero matches outright.
-  const recPagingRef = useRef<Record<string, TermPaging>>({});
+
+  const {
+    wallpapers: recWallpapers,
+    loading: recLoading,
+    loadingMore: recLoadingMore,
+    loadMore: loadMoreRecommendations,
+    removeWallpaper: removeRecWallpaper,
+  } = useRecommendationFeed({
+    apiKey,
+    nsfwAllowed,
+    sketchyAllowed,
+    recommendationSettings,
+    extraFilters: {
+      categories: recommendationSettings.categories,
+      purities: recommendationSettings.purities,
+      atleast: recommendationSettings.atleast,
+      ratios: recommendationSettings.ratios,
+      colors: [],
+    },
+    refreshKey: favoritesVersion,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -208,97 +198,19 @@ export default function Home({
     };
   }, [apiKey, heroSettings]);
 
-  useEffect(() => {
-    let cancelled = false;
-    let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    const terms = pickRecommendationTerms(recommendationSettings);
-    recPagingRef.current = {};
-    setRecTerms(terms);
-    setRecWallpapers([]);
-    if (terms.length === 0) {
-      setRecLoading(false);
-      return;
-    }
-    setRecLoading(true);
-    const purities = { sfw: true, sketchy: sketchyAllowed, nsfw: nsfwAllowed };
-
-    function attempt() {
-      const picks = terms.map((term) => ({ term, ...pickSortAndPage() }));
-      Promise.all(
-        picks.map(({ term, sorting, page }) =>
-          searchWallpapers({ ...defaultFilters(), query: term, purities, sorting }, apiKey, page)
-            .then((res) => ({ ok: true as const, term, sorting, page, res }))
-            .catch(() => ({ ok: false as const, term })),
-        ),
-      ).then((results) => {
-        if (cancelled) return;
-        const succeeded = results.flatMap((r) => (r.ok ? [r] : []));
-        // Every term failing at once (rate limit, network blip) isn't the
-        // same as "no recommendations" — that was the actual bug behind
-        // the row silently disappearing. Retry instead of settling on empty.
-        if (succeeded.length === 0) {
-          retryTimer = setTimeout(attempt, 6000);
-          return;
-        }
-        for (const r of succeeded) recPagingRef.current[r.term] = { page: r.page, lastPage: r.res.meta.last_page, sorting: r.sorting };
-        const merged = filterExcluded(dedupeById(interleave(succeeded.map((r) => r.res.data))));
-        const shown = preferUnseen(merged);
-        recordShown(shown.map((w) => w.id));
-        setRecWallpapers(shown);
-        setRecLoading(false);
-      });
-    }
-
-    attempt();
-    return () => {
-      cancelled = true;
-      clearTimeout(retryTimer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [favoritesVersion, apiKey, nsfwAllowed, sketchyAllowed, recommendationSettings]);
-
-  function loadMoreRecommendations() {
-    if (recLoadingMore) return;
-    const pending = recTerms.filter((term) => {
-      const paging = recPagingRef.current[term];
-      return paging && paging.page < paging.lastPage;
-    });
-    if (pending.length === 0) return;
-    setRecLoadingMore(true);
-    const purities = { sfw: true, sketchy: sketchyAllowed, nsfw: nsfwAllowed };
-    Promise.all(
-      pending.map((term) => {
-        const paging = recPagingRef.current[term];
-        const next = paging.page + 1;
-        return searchWallpapers({ ...defaultFilters(), query: term, purities, sorting: paging.sorting }, apiKey, next)
-          .then((res) => {
-            recPagingRef.current[term] = { ...paging, page: next, lastPage: res.meta.last_page };
-            return res.data;
-          })
-          .catch(() => []);
-      }),
-    )
-      .then((results) => {
-        const fresh = filterExcluded(interleave(results));
-        recordShown(fresh.map((w) => w.id));
-        setRecWallpapers((prev) => dedupeById([...prev, ...fresh]));
-      })
-      .finally(() => setRecLoadingMore(false));
-  }
-
   function recommendationContextMenu(wallpaper: Wallpaper): ContextMenuAction[] {
     return [
       {
         label: t("menu.recommendMore"),
         onClick: () => {
-          bumpTagWeight(wallpaper, 2);
+          bumpTagStats(wallpaper, "more");
           onToast(t("toast.recommendMore"));
         },
       },
       {
         label: t("menu.recommendLess"),
         onClick: () => {
-          bumpTagWeight(wallpaper, -2);
+          bumpTagStats(wallpaper, "less");
           onToast(t("toast.recommendLess"));
         },
       },
@@ -307,7 +219,7 @@ export default function Home({
         danger: true,
         onClick: () => {
           excludeWallpaper(wallpaper);
-          setRecWallpapers((prev) => prev.filter((w) => w.id !== wallpaper.id));
+          removeRecWallpaper(wallpaper.id);
           onToast(t("toast.dontRecommend"));
         },
       },
@@ -315,7 +227,6 @@ export default function Home({
   }
 
   const heroLoading = hero.length === 0;
-  const recTitle = recTerms.length ? `${t("home.recommendedForYou")} · ${recTerms.map((term) => `#${term}`).join(" ")}` : t("home.moreTags");
 
   return (
     <div className="py-6">
@@ -355,7 +266,8 @@ export default function Home({
         </div>
 
         <WallpaperRow
-          title={recTitle}
+          title={t("home.recommendedForYou")}
+          onTitleClick={onOpenRecommendations}
           wallpapers={recWallpapers}
           loading={recLoading}
           loadingMore={recLoadingMore}

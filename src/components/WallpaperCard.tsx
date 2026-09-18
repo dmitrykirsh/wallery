@@ -17,6 +17,14 @@ interface Props {
    * instead of the browser's default one — used by the recommendation row
    * for "не рекомендовать / реже / чаще". */
   contextMenuActions?: (wallpaper: Wallpaper) => ContextMenuAction[];
+  /** When provided, shows a simple like/dislike pair — used on the full
+   * Wallery Recommendations page as a quicker alternative to the right-click
+   * menu. Upvote reinforces the wallpaper's tags; downvote hides it and
+   * nudges its tags down, same as "не рекомендовать". */
+  onUpvote?: (wallpaper: Wallpaper) => void;
+  onDownvote?: (wallpaper: Wallpaper) => void;
+  upvoteTitle?: string;
+  downvoteTitle?: string;
   onOpen: (wallpaper: Wallpaper) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
   onToast: (message: string) => void;
@@ -29,7 +37,19 @@ const PURITY_BORDER: Record<string, { border: string; glow: string }> = {
   nsfw: { border: "#ef4b53", glow: "rgba(239,75,83,0.55)" },
 };
 
-export default function WallpaperCard({ wallpaper, favorite, fixedHeight, contextMenuActions, onOpen, onToggleFavorite, onToast }: Props) {
+export default function WallpaperCard({
+  wallpaper,
+  favorite,
+  fixedHeight,
+  contextMenuActions,
+  onUpvote,
+  onDownvote,
+  upvoteTitle,
+  downvoteTitle,
+  onOpen,
+  onToggleFavorite,
+  onToast,
+}: Props) {
   const aspect = wallpaper.dimension_x / wallpaper.dimension_y;
   const sizeStyle = fixedHeight
     ? { height: fixedHeight, width: fixedHeight * aspect }
@@ -97,8 +117,42 @@ export default function WallpaperCard({ wallpaper, favorite, fixedHeight, contex
         </svg>
       </motion.span>
 
-      <div className="absolute bottom-2 left-2 right-2 flex flex-wrap justify-end gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-        <WallpaperActions wallpaper={wallpaper} onToast={onToast} size="sm" />
+      <div className="absolute bottom-2 left-2 right-2 flex flex-wrap items-end justify-between gap-1.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        {(onUpvote || onDownvote) && (
+          <div className="pointer-events-auto flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {onUpvote && (
+              <motion.span
+                whileTap={{ scale: 0.85 }}
+                onClick={() => onUpvote(wallpaper)}
+                role="button"
+                title={upvoteTitle}
+                className="glass flex h-7 w-7 items-center justify-center rounded-full"
+                style={{ color: "white" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M12 19V5M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </motion.span>
+            )}
+            {onDownvote && (
+              <motion.span
+                whileTap={{ scale: 0.85 }}
+                onClick={() => onDownvote(wallpaper)}
+                role="button"
+                title={downvoteTitle}
+                className="glass flex h-7 w-7 items-center justify-center rounded-full"
+                style={{ color: "white" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M12 5v14M5 12l7 7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </motion.span>
+            )}
+          </div>
+        )}
+        <div className="pointer-events-auto ml-auto flex flex-wrap justify-end gap-1.5">
+          <WallpaperActions wallpaper={wallpaper} onToast={onToast} size="sm" />
+        </div>
       </div>
 
       {contextMenuActions && (

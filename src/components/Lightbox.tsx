@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import type { Wallpaper } from "../lib/types";
+import { motion } from "framer-motion";
+import type { Tag, Wallpaper } from "../lib/types";
 import { getWallpaper } from "../lib/api";
 import WallpaperActions from "./WallpaperActions";
 import FallbackImage from "./FallbackImage";
 import EditPanel from "./EditPanel";
+import ContextMenu, { type ContextMenuAction } from "./ContextMenu";
+import { blockTag, bumpTagStatByName } from "../lib/recommendationEngine";
+import { resolveSimilarQuery } from "../lib/similarSearch";
 import { useLang } from "../lib/LangContext";
 import { isTauri, openInBrowser } from "../lib/tauri";
 
@@ -20,10 +23,17 @@ interface Props {
   favoriteTags: string[];
   /** Toggles a tag in the recommendation-favorites list; returns the new starred state. */
   onToggleFavoriteTag: (tag: string) => boolean;
+  /** Whether Settings → "use custom tags for recommendations" is currently
+   * on — decides which toast wording to show after adding a tag. */
+  myTagsEnabled: boolean;
+  nsfwAllowed: boolean;
+  sketchyAllowed: boolean;
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;
   onTagClick: (tag: string) => void;
+  /** Runs the resolved "similar" query through the normal search flow. */
+  onFindSimilar: (query: string) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
   onToast: (message: string) => void;
 }
@@ -35,10 +45,14 @@ export default function Lightbox({
   hasMultiple,
   favoriteTags,
   onToggleFavoriteTag,
+  myTagsEnabled,
+  nsfwAllowed,
+  sketchyAllowed,
   onClose,
   onNext,
   onPrev,
   onTagClick,
+  onFindSimilar,
   onToggleFavorite,
   onToast,
 }: Props) {
@@ -47,7 +61,8 @@ export default function Lightbox({
   const [imgLoaded, setImgLoaded] = useState(false);
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(null);
   const [mainImageFailed, setMainImageFailed] = useState(false);
-  const [copiedTagId, setCopiedTagId] = useState<number | null>(null);
+  const [tagMenu, setTagMenu] = useState<{ tag: Tag; pos: { x: number; y: number } } | null>(null);
+  const [findingSimilar, setFindingSimilar] = useState(false);
   const [editFilter, setEditFilter] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [viewZoom, setViewZoom] = useState(1);
@@ -102,20 +117,62 @@ export default function Lightbox({
     viewDragRef.current = null;
   }
 
-  function toggleFavoriteTag(tagName: string) {
-    const nowStarred = onToggleFavoriteTag(tagName);
-    onToast(nowStarred ? t("tag.favAdded") : t("tag.favRemoved"));
+  async function findSimilar() {
+    if (findingSimilar) return;
+    setFindingSimilar(true);
+    try {
+      const query = await resolveSimilarQuery(detail, {
+        apiKey,
+        categories: { general: true, anime: true, people: true },
+        purities: { sfw: true, sketchy: sketchyAllowed, nsfw: nsfwAllowed },
+      });
+      if (query) {
+        onFindSimilar(query);
+      } else {
+        onToast(t("lightbox.noSimilar"));
+      }
+    } finally {
+      setFindingSimilar(false);
+    }
   }
 
-  async function copyTag(tagId: number, tagName: string) {
-    try {
-      await navigator.clipboard.writeText(tagName);
-      setCopiedTagId(tagId);
-      onToast(`${t("tag.copied")}: #${tagName}`);
-      setTimeout(() => setCopiedTagId((id) => (id === tagId ? null : id)), 900);
-    } catch {
-      onToast(t("tag.copyFailed"));
-    }
+  function tagMenuActions(tag: Tag): ContextMenuAction[] {
+    const isMyTag = favoriteTags.includes(tag.name);
+    return [
+      {
+        label: isMyTag ? t("tag.removeFromMyTags") : t("tag.addToMyTags"),
+        onClick: () => {
+          const nowAdded = onToggleFavoriteTag(tag.name);
+          if (!nowAdded) {
+            onToast(t("tag.favRemoved"));
+          } else {
+            onToast(myTagsEnabled ? t("tag.favAdded") : t("tag.favAddedDisabled"));
+          }
+        },
+      },
+      {
+        label: t("tag.showMore"),
+        onClick: () => {
+          bumpTagStatByName(tag.name, "more");
+          onToast(t("toast.recommendMore"));
+        },
+      },
+      {
+        label: t("tag.showLess"),
+        onClick: () => {
+          bumpTagStatByName(tag.name, "less");
+          onToast(t("toast.recommendLess"));
+        },
+      },
+      {
+        label: t("tag.blockTag"),
+        danger: true,
+        onClick: () => {
+          blockTag(tag.name);
+          onToast(`${t("tag.blocked")}: #${tag.name}`);
+        },
+      },
+    ];
   }
 
   useEffect(() => {
@@ -259,6 +316,19 @@ export default function Lightbox({
 
           <WallpaperActions wallpaper={detail} onToast={onToast} size="md" fill />
 
+          <button
+            onClick={findSimilar}
+            disabled={findingSimilar}
+            className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border py-2 text-sm"
+            style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="10" cy="10" r="6.5" />
+              <path d="M15 15l5 5" strokeLinecap="round" />
+            </svg>
+            {findingSimilar ? t("lightbox.findingSimilar") : t("lightbox.findSimilar")}
+          </button>
+
           <div className="flex shrink-0 flex-wrap gap-1.5">
             {(detail.tags ?? []).map((tag) => (
               <motion.span
@@ -268,62 +338,18 @@ export default function Lightbox({
                 onClick={() => onTagClick(tag.name)}
                 onContextMenu={(e) => {
                   e.preventDefault();
-                  copyTag(tag.id, tag.name);
+                  setTagMenu({ tag, pos: { x: e.clientX, y: e.clientY } });
                 }}
                 title={t("tag.hint")}
-                className="relative flex cursor-pointer items-center gap-1 overflow-hidden rounded-full border px-2 py-1 text-xs transition-colors"
+                className="flex cursor-pointer items-center gap-1 rounded-full border px-2 py-1 text-xs transition-colors"
                 style={{ borderColor: "var(--color-border)", color: "var(--color-ink-muted)" }}
               >
-                <span
-                  role="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavoriteTag(tag.name);
-                  }}
-                  title={t("tag.favHint")}
-                  className="shrink-0"
-                >
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill={favoriteTags.includes(tag.name) ? "var(--color-accent)" : "none"}
-                    stroke={favoriteTags.includes(tag.name) ? "var(--color-accent)" : "currentColor"}
-                    strokeWidth="1.6"
-                  >
-                    <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8-5.1-4.7 6.9-.8L12 2Z" strokeLinejoin="round" />
-                  </svg>
-                </span>
-                <AnimatePresence>
-                  {copiedTagId === tag.id && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute inset-0 flex items-center justify-center gap-1"
-                      style={{ background: "var(--gradient-accent)", color: "var(--color-accent-ink)" }}
-                    >
-                      <motion.svg
-                        width="11"
-                        height="11"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                      </motion.svg>
-                      {t("tag.copied")}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
                 #{tag.name}
               </motion.span>
             ))}
           </div>
+
+          <ContextMenu pos={tagMenu?.pos ?? null} actions={tagMenu ? tagMenuActions(tagMenu.tag) : []} onClose={() => setTagMenu(null)} />
 
           {isTauri() && (
             <div className="flex shrink-0 flex-col gap-2 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>

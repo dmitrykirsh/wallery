@@ -24,6 +24,10 @@ const dict = {
   "nav.widgets": { ru: "Виджеты", en: "Widgets", es: "Widgets", fr: "Widgets", de: "Widgets", zh: "小部件" },
   "nav.history": { ru: "История просмотра", en: "View history", es: "Historial de vistas", fr: "Historique", de: "Verlauf", zh: "浏览历史" },
   "nav.back": { ru: "Назад", en: "Back", es: "Atrás", fr: "Retour", de: "Zurück", zh: "返回" },
+  "recommendations.title": { ru: "Рекомендации Wallery", en: "Wallery Recommendations", es: "Recomendaciones de Wallery", fr: "Recommandations Wallery", de: "Wallery-Empfehlungen", zh: "Wallery 推荐" },
+  "recommendations.upvoteHint": { ru: "Нравится — показывать больше такого", en: "Like — show more like this", es: "Me gusta: mostrar más así", fr: "J'aime — en montrer plus comme ça", de: "Gefällt mir — mehr davon zeigen", zh: "喜欢——多显示类似内容" },
+  "recommendations.downvoteHint": { ru: "Не нравится — больше не показывать", en: "Dislike — don't show again", es: "No me gusta: no volver a mostrar", fr: "Je n'aime pas — ne plus montrer", de: "Gefällt mir nicht — nicht mehr zeigen", zh: "不喜欢——不再显示" },
+  "recommendations.refresh": { ru: "Обновить рекомендации", en: "Refresh recommendations", es: "Actualizar recomendaciones", fr: "Actualiser les recommandations", de: "Empfehlungen aktualisieren", zh: "刷新推荐" },
 
   "widgets.title": { ru: "Виджеты", en: "Widgets", es: "Widgets", fr: "Widgets", de: "Widgets", zh: "小部件" },
   "widgets.addClock": { ru: "+ Добавить часы", en: "+ Add clock", es: "+ Añadir reloj", fr: "+ Ajouter une horloge", de: "+ Uhr hinzufügen", zh: "+ 添加时钟" },
@@ -126,7 +130,7 @@ const dict = {
   "quick.random": { ru: "Рандом", en: "Random", es: "Aleatorio", fr: "Aléatoire", de: "Zufällig", zh: "随机" },
 
   "home.findByTag": { ru: "Найдите обои по тегу", en: "Find wallpapers by tag", es: "Busca por etiqueta", fr: "Trouver par tag", de: "Nach Tag finden", zh: "按标签查找壁纸" },
-  "home.recommendedForYou": { ru: "Рекомендуем для вас", en: "Recommended for you", es: "Recomendado para ti", fr: "Recommandé pour vous", de: "Für dich empfohlen", zh: "为你推荐" },
+  "home.recommendedForYou": { ru: "Рекомендации Wallery", en: "Wallery Recommendations", es: "Recomendaciones de Wallery", fr: "Recommandations Wallery", de: "Wallery-Empfehlungen", zh: "Wallery 推荐" },
   "home.moreTags": { ru: "Ещё по тегам", en: "More by tag", es: "Más por etiqueta", fr: "Plus par tag", de: "Mehr nach Tag", zh: "更多标签" },
 
   "action.set": { ru: "Установить", en: "Set", es: "Aplicar", fr: "Définir", de: "Setzen", zh: "设为壁纸" },
@@ -200,6 +204,14 @@ const dict = {
 
   "empty.loading": { ru: "Загрузка…", en: "Loading…", es: "Cargando…", fr: "Chargement…", de: "Wird geladen…", zh: "加载中…" },
   "empty.nothingFound": { ru: "Ничего не найдено", en: "Nothing found", es: "No se encontró nada", fr: "Aucun résultat", de: "Nichts gefunden", zh: "未找到结果" },
+  "empty.recommendations": {
+    ru: "Пока нет рекомендаций — добавьте что-нибудь в избранное или поищите обои, чтобы Wallery понял ваши вкусы.",
+    en: "No recommendations yet — favorite something or search for wallpapers so Wallery can learn your taste.",
+    es: "Aún no hay recomendaciones: marca algo como favorito o busca fondos para que Wallery aprenda tus gustos.",
+    fr: "Pas encore de recommandations — mettez quelque chose en favori ou recherchez des fonds pour que Wallery apprenne vos goûts.",
+    de: "Noch keine Empfehlungen — favorisiere etwas oder suche nach Hintergründen, damit Wallery deinen Geschmack lernt.",
+    zh: "暂无推荐——收藏一些内容或搜索壁纸，让 Wallery 了解你的喜好。",
+  },
   "empty.favorites": { ru: "Пока пусто — нажмите на сердечко у обоев, чтобы сохранить их здесь", en: "Nothing yet — tap the heart on a wallpaper to save it here", es: "Aún vacío: pulsa el corazón en un fondo para guardarlo aquí", fr: "Rien pour l'instant — cliquez sur le cœur d'un fond pour l'enregistrer ici", de: "Noch leer — tippe auf das Herz bei einem Hintergrund, um ihn hier zu speichern", zh: "还没有内容——点击壁纸上的心形图标即可收藏" },
   "empty.history": { ru: "Пока пусто — просмотренные обои появятся здесь", en: "Nothing yet — wallpapers you've viewed will show up here", es: "Aún vacío: los fondos que veas aparecerán aquí", fr: "Rien pour l'instant — les fonds consultés apparaîtront ici", de: "Noch leer — angesehene Hintergründe erscheinen hier", zh: "还没有内容——你看过的壁纸会显示在这里" },
   "home.heroEmpty": {
@@ -267,6 +279,17 @@ const dict = {
 
   "settings.recTitle": { ru: "Рекомендации", en: "Recommendations", es: "Recomendaciones", fr: "Recommandations", de: "Empfehlungen", zh: "推荐" },
   "settings.recToggle": { ru: "Свои теги для рекомендаций", en: "Custom tags for recommendations", es: "Etiquetas propias para recomendaciones", fr: "Tags personnalisés pour les recommandations", de: "Eigene Tags für Empfehlungen", zh: "为推荐使用自定义标签" },
+  "settings.recFilters": { ru: "Фильтры для рекомендаций", en: "Filters for recommendations", es: "Filtros para recomendaciones", fr: "Filtres pour les recommandations", de: "Filter für Empfehlungen", zh: "推荐的筛选条件" },
+  "settings.recBlockedTags": { ru: "Запрещённые теги", en: "Blocked tags", es: "Etiquetas bloqueadas", fr: "Tags bloqués", de: "Blockierte Tags", zh: "禁用标签" },
+  "settings.recBlockedHint": {
+    ru: "Обои с этими тегами никогда не появятся в рекомендациях — ни в ленте на главной, ни на странице рекомендаций.",
+    en: "Wallpapers with these tags will never show up in recommendations — neither in the home feed nor on the recommendations page.",
+    es: "Los fondos con estas etiquetas nunca aparecerán en las recomendaciones, ni en el inicio ni en la página de recomendaciones.",
+    fr: "Les fonds avec ces tags n'apparaîtront jamais dans les recommandations, ni sur l'accueil ni sur la page des recommandations.",
+    de: "Hintergründe mit diesen Tags erscheinen nie in Empfehlungen — weder auf der Startseite noch auf der Empfehlungsseite.",
+    zh: "带有这些标签的壁纸永远不会出现在推荐中——无论是主页信息流还是推荐页面。",
+  },
+  "settings.recBlockedPlaceholder": { ru: "Добавить запрещённый тег и нажать Enter", en: "Add a blocked tag and press Enter", es: "Añade una etiqueta bloqueada y pulsa Intro", fr: "Ajoutez un tag bloqué et appuyez sur Entrée", de: "Blockierten Tag hinzufügen und Enter drücken", zh: "添加禁用标签并按 Enter" },
   "settings.recHint": {
     ru: "Если выключено, рекомендации основаны на истории поиска и избранном",
     en: "When off, recommendations are based on your search history and favorites",
@@ -320,9 +343,26 @@ const dict = {
 
   "lightbox.notLoaded": { ru: "Не удалось загрузить", en: "Couldn't load", es: "No se pudo cargar", fr: "Impossible de charger", de: "Konnte nicht geladen werden", zh: "加载失败" },
   "lightbox.openInBrowser": { ru: "Открыть в браузере", en: "Open in browser", es: "Abrir en el navegador", fr: "Ouvrir dans le navigateur", de: "Im Browser öffnen", zh: "在浏览器中打开" },
-  "tag.favHint": { ru: "В избранное для рекомендаций", en: "Favorite for recommendations", es: "Favorito para recomendaciones", fr: "Favori pour les recommandations", de: "Favorit für Empfehlungen", zh: "收藏用于推荐" },
-  "tag.favAdded": { ru: "Добавлено в избранное для рекомендаций", en: "Added to recommendation favorites", es: "Añadido a favoritos de recomendaciones", fr: "Ajouté aux favoris de recommandations", de: "Zu Empfehlungs-Favoriten hinzugefügt", zh: "已添加到推荐收藏" },
-  "tag.favRemoved": { ru: "Убрано из избранного для рекомендаций", en: "Removed from recommendation favorites", es: "Eliminado de favoritos de recomendaciones", fr: "Retiré des favoris de recommandations", de: "Aus Empfehlungs-Favoriten entfernt", zh: "已从推荐收藏中移除" },
+  "lightbox.findSimilar": { ru: "Найти похожие", en: "Find similar", es: "Buscar similares", fr: "Trouver des similaires", de: "Ähnliche finden", zh: "查找相似壁纸" },
+  "lightbox.findingSimilar": { ru: "Ищем похожие…", en: "Finding similar…", es: "Buscando similares…", fr: "Recherche en cours…", de: "Suche läuft…", zh: "正在查找…" },
+  "lightbox.noSimilar": {
+    ru: "Не удалось найти похожие обои по тегам",
+    en: "Couldn't find similar wallpapers by tags",
+    es: "No se encontraron fondos similares por etiquetas",
+    fr: "Aucun fond similaire trouvé par tags",
+    de: "Keine ähnlichen Hintergründe anhand der Tags gefunden",
+    zh: "无法根据标签找到相似壁纸",
+  },
+  "tag.favAdded": { ru: "Тег добавлен в свои рекомендации", en: "Tag added to your recommendations", es: "Etiqueta añadida a tus recomendaciones", fr: "Tag ajouté à vos recommandations", de: "Tag zu deinen Empfehlungen hinzugefügt", zh: "标签已添加到你的推荐" },
+  "tag.favAddedDisabled": {
+    ru: "Тег добавлен в свои рекомендации. Вы можете включить их в настройках.",
+    en: "Tag added to your recommendations. You can turn them on in Settings.",
+    es: "Etiqueta añadida a tus recomendaciones. Puedes activarlas en Ajustes.",
+    fr: "Tag ajouté à vos recommandations. Vous pouvez les activer dans les Paramètres.",
+    de: "Tag zu deinen Empfehlungen hinzugefügt. Du kannst sie in den Einstellungen aktivieren.",
+    zh: "标签已添加到你的推荐。你可以在设置中启用它们。",
+  },
+  "tag.favRemoved": { ru: "Убрано из своих рекомендаций", en: "Removed from your recommendations", es: "Eliminada de tus recomendaciones", fr: "Retiré de vos recommandations", de: "Aus deinen Empfehlungen entfernt", zh: "已从你的推荐中移除" },
 
   "edit.title": { ru: "Редактирование", en: "Editing", es: "Edición", fr: "Édition", de: "Bearbeitung", zh: "编辑" },
   "edit.cropTitle": { ru: "Кадрирование", en: "Crop", es: "Recorte", fr: "Recadrage", de: "Zuschnitt", zh: "裁剪" },
@@ -380,22 +420,19 @@ const dict = {
   "history.title": { ru: "История просмотра", en: "View history", es: "Historial de vistas", fr: "Historique de visionnage", de: "Anzeigeverlauf", zh: "浏览历史" },
   "history.clear": { ru: "Очистить историю", en: "Clear history", es: "Borrar historial", fr: "Effacer l'historique", de: "Verlauf löschen", zh: "清除历史" },
   "tag.hint": {
-    ru: "ЛКМ — поиск, ПКМ — копировать",
-    en: "Left-click to search, right-click to copy",
-    es: "Clic izquierdo: buscar, clic derecho: copiar",
-    fr: "Clic gauche : rechercher, clic droit : copier",
-    de: "Linksklick: Suchen, Rechtsklick: Kopieren",
-    zh: "左键搜索，右键复制",
+    ru: "ЛКМ — поиск, ПКМ — меню",
+    en: "Left-click to search, right-click for menu",
+    es: "Clic izquierdo: buscar, clic derecho: menú",
+    fr: "Clic gauche : rechercher, clic droit : menu",
+    de: "Linksklick: Suchen, Rechtsklick: Menü",
+    zh: "左键搜索，右键打开菜单",
   },
-  "tag.copied": { ru: "Скопировано", en: "Copied", es: "Copiado", fr: "Copié", de: "Kopiert", zh: "已复制" },
-  "tag.copyFailed": {
-    ru: "Не удалось скопировать",
-    en: "Couldn't copy",
-    es: "No se pudo copiar",
-    fr: "Impossible de copier",
-    de: "Kopieren fehlgeschlagen",
-    zh: "复制失败",
-  },
+  "tag.addToMyTags": { ru: "Добавить в свои рекомендации", en: "Add to my recommendation tags", es: "Añadir a mis etiquetas de recomendación", fr: "Ajouter à mes tags de recommandation", de: "Zu meinen Empfehlungs-Tags hinzufügen", zh: "添加到我的推荐标签" },
+  "tag.removeFromMyTags": { ru: "Убрать из своих рекомендаций", en: "Remove from my recommendation tags", es: "Quitar de mis etiquetas de recomendación", fr: "Retirer de mes tags de recommandation", de: "Aus meinen Empfehlungs-Tags entfernen", zh: "从我的推荐标签中移除" },
+  "tag.showMore": { ru: "Показывать чаще в рекомендациях", en: "Show more in recommendations", es: "Mostrar más en recomendaciones", fr: "Montrer plus dans les recommandations", de: "Öfter in Empfehlungen zeigen", zh: "在推荐中多显示" },
+  "tag.showLess": { ru: "Показывать реже в рекомендациях", en: "Show less in recommendations", es: "Mostrar menos en recomendaciones", fr: "Montrer moins dans les recommandations", de: "Seltener in Empfehlungen zeigen", zh: "在推荐中少显示" },
+  "tag.blockTag": { ru: "Запретить тег", en: "Block tag", es: "Bloquear etiqueta", fr: "Bloquer le tag", de: "Tag blockieren", zh: "禁用标签" },
+  "tag.blocked": { ru: "Тег запрещён", en: "Tag blocked", es: "Etiqueta bloqueada", fr: "Tag bloqué", de: "Tag blockiert", zh: "标签已禁用" },
 } as const;
 
 export type TranslationKey = keyof typeof dict;

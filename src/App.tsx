@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Results from "./pages/Results";
 import Favorites from "./pages/Favorites";
 import History from "./pages/History";
+import Recommendations from "./pages/Recommendations";
 import { defaultFilters } from "./lib/filters";
 import { loadSettings, saveSettings, type Settings } from "./lib/settings";
 import { loadHeroSettings, saveHeroSettings, type HeroSettings } from "./lib/heroSettings";
@@ -26,7 +27,7 @@ import { loadWidgets } from "./lib/widgets";
 import { spawnWidgetWindow, widgetWindowExists } from "./lib/widgetWindow";
 import type { Filters, Wallpaper } from "./lib/types";
 
-type View = "home" | "results" | "favorites" | "history";
+type View = "home" | "results" | "favorites" | "history" | "recommendations";
 interface NavEntry {
   view: View;
   filters: Filters;
@@ -50,6 +51,14 @@ function App() {
   const active = activeList[activeIndex] ?? null;
   const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const { t, lang } = useLang();
+
+  // Switching pages while scrolled deep into the previous one left the new
+  // page's content mounting far below the fold — which then made its own
+  // infinite-scroll sentinel (already in view) fire immediately, loading
+  // more before the user ever saw the top. Every view change starts fresh.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
 
   // Snapshots where we're leaving FROM, right before a navigation actually
   // changes the view/filters — so "back" can restore it afterward.
@@ -120,11 +129,9 @@ function App() {
     const has = recommendationSettings.customTags.includes(tag);
     const next = {
       ...recommendationSettings,
-      // Starring a tag is an explicit signal the user wants tag-based
-      // recommendations — without this, the tag was saved but silently had
-      // no effect until the user separately found and flipped the toggle
-      // in Settings themselves.
-      useCustomTags: has ? recommendationSettings.useCustomTags : true,
+      // Adding a tag here no longer force-enables useCustomTags — the user
+      // decides that separately in Settings; the Lightbox toast tells them
+      // to if it's currently off.
       customTags: has ? recommendationSettings.customTags.filter((t) => t !== tag) : [...recommendationSettings.customTags, tag],
     };
     setRecommendationSettings(next);
@@ -202,6 +209,7 @@ function App() {
           isFavorite={isFavorite}
           onSelectTag={runSearch}
           onQuickSort={runSort}
+          onOpenRecommendations={() => navigateTo("recommendations")}
           onOpen={openWallpaper}
           onToggleFavorite={toggleFavorite}
           onToast={showToast}
@@ -239,6 +247,19 @@ function App() {
           onOpen={openWallpaper}
           onToggleFavorite={toggleFavorite}
           onClear={handleClearHistory}
+          onToast={showToast}
+        />
+      )}
+
+      {view === "recommendations" && (
+        <Recommendations
+          apiKey={settings.apiKey}
+          nsfwAllowed={settings.nsfwEnabled}
+          sketchyAllowed={settings.sketchyEnabled}
+          recommendationSettings={recommendationSettings}
+          isFavorite={isFavorite}
+          onOpen={openWallpaper}
+          onToggleFavorite={toggleFavorite}
           onToast={showToast}
         />
       )}
@@ -285,6 +306,9 @@ function App() {
           favorite={isFavorite(active.id)}
           hasMultiple={activeList.length > 1}
           favoriteTags={recommendationSettings.customTags}
+          myTagsEnabled={recommendationSettings.useCustomTags}
+          nsfwAllowed={settings.nsfwEnabled}
+          sketchyAllowed={settings.sketchyEnabled}
           onToggleFavoriteTag={toggleRecommendationTag}
           onClose={() => setActiveList([])}
           onNext={() => setActiveIndex((i) => (i + 1) % activeList.length)}
@@ -292,6 +316,10 @@ function App() {
           onTagClick={(tag) => {
             setActiveList([]);
             runSearch(tag);
+          }}
+          onFindSimilar={(query) => {
+            setActiveList([]);
+            runSearch(query);
           }}
           onToggleFavorite={toggleFavorite}
           onToast={showToast}
