@@ -1,4 +1,4 @@
-# Wallery
+<img width="541" height="600" alt="image" src="https://github.com/user-attachments/assets/a7e716d6-5aca-435b-90b7-1312fafb2d7b" /># Wallery
 
 [![GitHub release](https://img.shields.io/github/v/release/dmitrykirsh/wallery?label=release)](https://github.com/dmitrykirsh/wallery/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/dmitrykirsh/wallery/total)](https://github.com/dmitrykirsh/wallery/releases)
@@ -13,26 +13,29 @@ A fast, modern desktop wallpaper browser for [Wallhaven](https://wallhaven.cc), 
 
 A rotating hero banner (Hot / Top list / Latest / your own custom tags) and a personalized "Recommended for you" row based on your favorites and search history, plus an endless feed of wallpapers grouped by tag.
 
-![Home page](https://github.com/user-attachments/assets/5baf0a7b-cdee-46da-96ca-6846a17ee34a)
+![Home page](https://github.com/user-attachments/assets/f27bb57f-a3b7-44a3-ac64-897814dbbeb9)
 
 ### Search like on Wallhaven itself
 
 The same resolution, aspect ratio, color, and sorting filters as the original site — including "At least" / "Exactly" resolution matching and grouped aspect ratios.
 
-![Resolution filter](https://github.com/user-attachments/assets/c5b2b73e-cf9e-4146-9e01-42fda5786eea)
-![Search results](https://github.com/user-attachments/assets/cacb7bb5-4c49-4fd2-b546-a1b415a0d190)
+![Resolution filter](https://github.com/user-attachments/assets/73d246a7-8f1f-4de1-b731-ff2b96d1a941)
+![Search results](https://github.com/user-attachments/assets/45c5eaab-9d9c-49e5-8947-4dbf7c15582a>
+)
 
 ### Crop to your exact screen
 
 Open any wallpaper, pick your monitor's resolution (auto-detected) or a custom size, pan and zoom to frame it, then save the crop or set it as your wallpaper directly.
 
-![Wallpaper detail with crop tool](https://github.com/user-attachments/assets/2a462faa-2187-43d9-9739-368a17a55fa9)
+![Wallpaper detail with crop tool](https://github.com/user-attachments/assets/6411d7f1-8ad7-4c6e-960e-fd46bd20ada7>
+)
 
 ### Automatic wallpaper slideshow
 
 Set up rules — by tag, source, resolution, color, orientation — and Wallery rotates your wallpaper on a schedule, even per monitor, while running quietly in the tray.
 
-![Slideshow rules](https://github.com/user-attachments/assets/ca08da86-b1e8-4739-b44e-bf1d62c2b66f)
+![Slideshow rules](https://github.com/user-attachments/assets/b765e160-5bda-4670-bd14-d9d3c9775973>
+)
 
 ### Desktop clock widgets
 
@@ -40,8 +43,8 @@ Add a clock straight onto your desktop — draggable, resizable, and sitting beh
 
 <table>
   <tr>
-    <td><img src="screenshots/widget-settings.webp" alt="Clock widget editor" height="360"></td>
-    <td><img src="screenshots/widget-clock.webp" alt="Clock widget on the desktop" height="360"></td>
+   <td><img src="https://github.com/user-attachments/assets/5c4d0900-8601-42c0-be9c-b6004dde86df" alt="Clock widget editor" height="360"></td>
+   <td><img src="https://github.com/user-attachments/assets/85f64d91-99af-4468-b9cf-11a2dd273844" alt="Clock widget on the desktop" height="360"></td>
   </tr>
 </table>
 
