@@ -5,6 +5,7 @@ import WallpaperActions from "./WallpaperActions";
 import FallbackImage from "./FallbackImage";
 import ContextMenu, { type ContextMenuAction } from "./ContextMenu";
 import { useLang } from "../lib/LangContext";
+import { getCachedThumb, useFavoritesCacheVersion } from "../lib/favoritesCache";
 
 interface Props {
   wallpaper: Wallpaper;
@@ -27,6 +28,10 @@ interface Props {
   downvoteTitle?: string;
   onOpen: (wallpaper: Wallpaper) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
+  /** When provided, shows a cross in the top-right corner on hover, used by
+   * the view history to drop one entry instead of clearing everything. */
+  onRemove?: (wallpaper: Wallpaper) => void;
+  removeTitle?: string;
   onToast: (message: string) => void;
 }
 
@@ -50,6 +55,8 @@ export default function WallpaperCard({
   downvoteTitle,
   onOpen,
   onToggleFavorite,
+  onRemove,
+  removeTitle,
   onToast,
 }: Props) {
   const aspect = wallpaper.dimension_x / wallpaper.dimension_y;
@@ -57,6 +64,8 @@ export default function WallpaperCard({
     ? { height: fixedHeight, width: fixedHeight * aspect }
     : { aspectRatio: `${wallpaper.dimension_x} / ${wallpaper.dimension_y}`, width: "100%" };
   const { t } = useLang();
+  useFavoritesCacheVersion();
+  const cachedThumb = getCachedThumb(wallpaper.id);
   const purityBadge = PURITY_BADGE[wallpaper.purity];
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -99,7 +108,7 @@ export default function WallpaperCard({
           always 16:9) that badly crop portrait or square wallpapers. */}
       <motion.div className="h-full w-full" whileHover={{ scale: 1.12 }} transition={{ type: "spring", stiffness: 260, damping: 22 }}>
         <FallbackImage
-          sources={[wallpaper.thumbs.original, wallpaper.thumbs.large, wallpaper.thumbs.small]}
+          sources={[...(cachedThumb ? [cachedThumb] : []), wallpaper.thumbs.original, wallpaper.thumbs.large, wallpaper.thumbs.small]}
           alt={wallpaper.id}
           className="block h-full w-full object-cover"
         />
@@ -107,12 +116,31 @@ export default function WallpaperCard({
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/10 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
-      <div
-        className="glass pointer-events-none absolute top-2 right-2 rounded-md px-1.5 py-0.5 text-xs font-medium opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-        style={{ color: "var(--color-ink)" }}
-      >
-        {wallpaper.resolution}
-      </div>
+      {onRemove ? (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.85 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(wallpaper);
+          }}
+          aria-label={removeTitle}
+          title={removeTitle}
+          className="glass absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100"
+          style={{ color: "var(--color-ink)" }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+          </svg>
+        </motion.button>
+      ) : (
+        <div
+          className="glass pointer-events-none absolute top-2 right-2 rounded-md px-1.5 py-0.5 text-xs font-medium opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style={{ color: "var(--color-ink)" }}
+        >
+          {wallpaper.resolution}
+        </div>
+      )}
 
       <div className="absolute top-2 left-2 flex items-center gap-1.5">
         {purityBadge && (

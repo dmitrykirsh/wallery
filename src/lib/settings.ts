@@ -5,6 +5,12 @@ export interface Settings {
   nsfwEnabled: boolean;
   sketchyEnabled: boolean;
   autostart: boolean;
+  /** Ask GitHub once in a while whether a newer release exists. */
+  checkUpdates: boolean;
+  /** Show the "new version available" popup when a check finds one. */
+  updateNotifications: boolean;
+  /** Keep offline copies of favorites on disk (downloaded automatically). */
+  cacheFavorites: boolean;
 }
 
 const defaults: Settings = {
@@ -12,6 +18,9 @@ const defaults: Settings = {
   nsfwEnabled: true,
   sketchyEnabled: true,
   autostart: false,
+  checkUpdates: true,
+  updateNotifications: true,
+  cacheFavorites: true,
 };
 
 export function loadSettings(): Settings {

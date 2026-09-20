@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { isTauri } from "./tauri";
 import { loadLang, translate } from "./i18n";
+import { isApiDownError, reportApiStatus } from "./connectivity";
 import type { SearchResponse, Wallpaper, Filters } from "./types";
 
 // Several places in the app (the hero banner's initial page burst, the
@@ -48,6 +49,19 @@ function throttled<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 async function apiGet<T>(path: string, params: Record<string, string>): Promise<T> {
+  try {
+    const result = await rawApiGet<T>(path, params);
+    reportApiStatus(true);
+    return result;
+  } catch (err) {
+    // Only "the site itself is unreachable" counts — a 429 or a 4xx means
+    // Wallhaven answered, so it must not flip the app into its down state.
+    if (isApiDownError(err)) reportApiStatus(false);
+    throw err;
+  }
+}
+
+function rawApiGet<T>(path: string, params: Record<string, string>): Promise<T> {
   return throttled(async () => {
     if (isTauri()) {
       return await invoke<T>("api_get", { path, params });

@@ -441,6 +441,61 @@ const dict = {
   "tag.showLess": { ru: "Показывать реже в рекомендациях", en: "Show less in recommendations", es: "Mostrar menos en recomendaciones", fr: "Montrer moins dans les recommandations", de: "Seltener in Empfehlungen zeigen", zh: "在推荐中少显示" },
   "tag.blockTag": { ru: "Запретить тег", en: "Block tag", es: "Bloquear etiqueta", fr: "Bloquer le tag", de: "Tag blockieren", zh: "禁用标签" },
   "tag.blocked": { ru: "Тег запрещён", en: "Tag blocked", es: "Etiqueta bloqueada", fr: "Tag bloqué", de: "Tag blockiert", zh: "标签已禁用" },
+
+  "lightbox.similarSettings": { ru: "Выбрать теги для поиска", en: "Choose tags to search by", es: "Elegir etiquetas para buscar", fr: "Choisir les tags de recherche", de: "Tags für die Suche wählen", zh: "选择搜索标签" },
+  "lightbox.similarPick": { ru: "Выберите теги — по ним будем искать", en: "Pick the tags to search by", es: "Elige las etiquetas para buscar", fr: "Choisissez les tags de recherche", de: "Wähle die Tags für die Suche", zh: "选择用于搜索的标签" },
+  "lightbox.similarSearch": { ru: "Найти по выбранным тегам", en: "Search by selected tags", es: "Buscar por las etiquetas elegidas", fr: "Chercher par les tags choisis", de: "Nach gewählten Tags suchen", zh: "按所选标签搜索" },
+  "lightbox.similarNoTags": { ru: "У этих обоев нет тегов", en: "This wallpaper has no tags", es: "Este fondo no tiene etiquetas", fr: "Ce fond n'a pas de tags", de: "Dieser Hintergrund hat keine Tags", zh: "这张壁纸没有标签" },
+  "lightbox.similarClear": { ru: "Сбросить", en: "Clear", es: "Borrar", fr: "Effacer", de: "Zurücksetzen", zh: "清除" },
+
+  "action.setLock": { ru: "Экран блокировки", en: "Lock screen", es: "Pantalla de bloqueo", fr: "Écran de verrouillage", de: "Sperrbildschirm", zh: "锁屏" },
+  "action.settingLock": { ru: "Ставим…", en: "Setting…", es: "Aplicando…", fr: "Application…", de: "Wird gesetzt…", zh: "设置中…" },
+  "toast.lockSet": { ru: "Обои установлены на экран блокировки", en: "Set as your lock screen", es: "Fondo aplicado a la pantalla de bloqueo", fr: "Défini comme écran de verrouillage", de: "Als Sperrbildschirm gesetzt", zh: "已设为锁屏壁纸" },
+
+  "history.remove": { ru: "Убрать из истории", en: "Remove from history", es: "Quitar del historial", fr: "Retirer de l'historique", de: "Aus dem Verlauf entfernen", zh: "从历史中移除" },
+
+  "apiDown.title": { ru: "Wallhaven сейчас недоступен", en: "Wallhaven is unavailable right now", es: "Wallhaven no está disponible ahora", fr: "Wallhaven est indisponible pour le moment", de: "Wallhaven ist gerade nicht erreichbar", zh: "Wallhaven 暂时无法访问" },
+  "apiDown.text": {
+    ru: "Сервер сайта не отвечает — это случается, и обычно проходит само. Попробуйте чуть позже.",
+    en: "The site's server isn't responding — it happens and usually clears up on its own. Try again a bit later.",
+    es: "El servidor del sitio no responde: pasa y suele resolverse solo. Inténtalo de nuevo más tarde.",
+    fr: "Le serveur du site ne répond pas — cela arrive et se résout en général tout seul. Réessayez un peu plus tard.",
+    de: "Der Server der Seite antwortet nicht — das kommt vor und legt sich meist von selbst. Versuche es später erneut.",
+    zh: "网站服务器没有响应——这种情况偶尔会发生，通常会自行恢复。请稍后再试。",
+  },
+  "apiDown.favorites": { ru: "Ваши избранные обои всё ещё доступны", en: "Your favorite wallpapers are still available", es: "Tus fondos favoritos siguen disponibles", fr: "Vos fonds favoris sont toujours disponibles", de: "Deine Favoriten sind weiterhin verfügbar", zh: "你收藏的壁纸仍然可用" },
+  "apiDown.openFavorites": { ru: "Открыть избранное", en: "Open favorites", es: "Abrir favoritos", fr: "Ouvrir les favoris", de: "Favoriten öffnen", zh: "打开收藏" },
+  "apiDown.retry": { ru: "Повторить", en: "Try again", es: "Reintentar", fr: "Réessayer", de: "Erneut versuchen", zh: "重试" },
+  "apiDown.code": { ru: "Код ошибки", en: "Error code", es: "Código de error", fr: "Code d'erreur", de: "Fehlercode", zh: "错误代码" },
+
+  "update.available": { ru: "Доступна новая версия", en: "New version available", es: "Nueva versión disponible", fr: "Nouvelle version disponible", de: "Neue Version verfügbar", zh: "有新版本可用" },
+  "update.download": { ru: "Скачать", en: "Download", es: "Descargar", fr: "Télécharger", de: "Herunterladen", zh: "下载" },
+  "update.later": { ru: "Позже", en: "Later", es: "Más tarde", fr: "Plus tard", de: "Später", zh: "稍后" },
+  "whatsNew.title": { ru: "Что нового", en: "What's new", es: "Novedades", fr: "Nouveautés", de: "Neuigkeiten", zh: "新功能" },
+  "whatsNew.done": { ru: "Понятно", en: "Got it", es: "Entendido", fr: "Compris", de: "Verstanden", zh: "知道了" },
+  "whatsNew.empty": { ru: "Для этой версии описания изменений нет.", en: "No release notes for this version.", es: "No hay notas para esta versión.", fr: "Pas de notes pour cette version.", de: "Keine Versionshinweise für diese Version.", zh: "此版本没有更新说明。" },
+
+  "settings.checkUpdates": { ru: "Проверять обновления", en: "Check for updates", es: "Buscar actualizaciones", fr: "Vérifier les mises à jour", de: "Nach Updates suchen", zh: "检查更新" },
+  "settings.checkUpdatesHint": { ru: "Раз в несколько часов смотреть, вышла ли новая версия", en: "Every few hours, look for a newer version", es: "Cada pocas horas, buscar una versión nueva", fr: "Toutes les quelques heures, chercher une nouvelle version", de: "Alle paar Stunden nach einer neuen Version suchen", zh: "每隔几小时检查是否有新版本" },
+  "settings.updateNotify": { ru: "Уведомлять о новой версии", en: "Notify about new versions", es: "Avisar de nuevas versiones", fr: "Prévenir des nouvelles versions", de: "Über neue Versionen benachrichtigen", zh: "新版本通知" },
+  "settings.updateNotifyHint": { ru: "Показывать окошко, когда найдена новая версия", en: "Show a popup when a new version is found", es: "Mostrar un aviso cuando haya una versión nueva", fr: "Afficher une fenêtre quand une nouvelle version est trouvée", de: "Ein Hinweisfenster zeigen, wenn eine neue Version gefunden wird", zh: "发现新版本时弹出提示" },
+  "settings.checkNow": { ru: "Проверить сейчас", en: "Check now", es: "Comprobar ahora", fr: "Vérifier maintenant", de: "Jetzt prüfen", zh: "立即检查" },
+  "settings.checking": { ru: "Проверяем…", en: "Checking…", es: "Comprobando…", fr: "Vérification…", de: "Prüfe…", zh: "检查中…" },
+  "settings.upToDate": { ru: "У вас последняя версия", en: "You're up to date", es: "Tienes la última versión", fr: "Vous êtes à jour", de: "Du bist auf dem neuesten Stand", zh: "已是最新版本" },
+  "settings.checkFailed": { ru: "Не удалось проверить обновления", en: "Couldn't check for updates", es: "No se pudo buscar actualizaciones", fr: "Impossible de vérifier les mises à jour", de: "Update-Suche fehlgeschlagen", zh: "无法检查更新" },
+  "settings.help": { ru: "Справка", en: "Help", es: "Ayuda", fr: "Aide", de: "Hilfe", zh: "帮助" },
+  "settings.helpHint": { ru: "Описание каждой функции и как она работает", en: "What every feature does and how it works", es: "Qué hace cada función y cómo funciona", fr: "Ce que fait chaque fonction et comment elle marche", de: "Was jede Funktion tut und wie sie funktioniert", zh: "每个功能的说明及使用方法" },
+  "settings.whatsNew": { ru: "Что нового", en: "What's new", es: "Novedades", fr: "Nouveautés", de: "Neuigkeiten", zh: "新功能" },
+  "favorites.cache": { ru: "Кэшировать избранное", en: "Cache favorites", es: "Guardar favoritos sin conexión", fr: "Mettre les favoris en cache", de: "Favoriten zwischenspeichern", zh: "缓存收藏" },
+  "favorites.cacheHint": {
+    ru: "Включено — избранные обои скачиваются на диск и работают без сайта. Выключено — новые не скачиваются.",
+    en: "On — favorites are downloaded to disk and work without the site. Off — new ones aren't downloaded.",
+    es: "Activado: los favoritos se descargan y funcionan sin el sitio. Desactivado: no se descargan nuevos.",
+    fr: "Activé : les favoris sont téléchargés et fonctionnent sans le site. Désactivé : aucun nouveau téléchargement.",
+    de: "An: Favoriten werden heruntergeladen und funktionieren ohne die Seite. Aus: neue werden nicht geladen.",
+    zh: "开启：收藏会下载到本地，网站不可用时也能使用。关闭：不再下载新的。",
+  },
+  "settings.updates": { ru: "Обновления", en: "Updates", es: "Actualizaciones", fr: "Mises à jour", de: "Updates", zh: "更新" },
 } as const;
 
 export type TranslationKey = keyof typeof dict;

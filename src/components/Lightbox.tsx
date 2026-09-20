@@ -7,7 +7,9 @@ import FallbackImage from "./FallbackImage";
 import EditPanel from "./EditPanel";
 import ContextMenu, { type ContextMenuAction } from "./ContextMenu";
 import { blockTag, bumpTagStatByName } from "../lib/recommendationEngine";
-import { resolveSimilarQuery } from "../lib/similarSearch";
+import { requireQuery, resolveSimilarQuery } from "../lib/similarSearch";
+import { getCachedFull, getCachedThumb, useFavoritesCacheVersion } from "../lib/favoritesCache";
+import { isApiDown } from "../lib/connectivity";
 import { useLang } from "../lib/LangContext";
 import { isTauri, openInBrowser } from "../lib/tauri";
 
@@ -38,6 +40,15 @@ interface Props {
   onToast: (message: string) => void;
 }
 
+/** A favorite's offline copy is tried after the network file normally, but
+ * first once the API is known to be down, so nobody sits through failed
+ * retries to see something already stored on disk. */
+function fullSources(w: Wallpaper): string[] {
+  const cached = getCachedFull(w.id);
+  if (!cached) return [w.path];
+  return isApiDown() ? [cached, w.path] : [w.path, cached];
+}
+
 export default function Lightbox({
   wallpaper,
   apiKey,
@@ -63,6 +74,9 @@ export default function Lightbox({
   const [mainImageFailed, setMainImageFailed] = useState(false);
   const [tagMenu, setTagMenu] = useState<{ tag: Tag; pos: { x: number; y: number } } | null>(null);
   const [findingSimilar, setFindingSimilar] = useState(false);
+  const [similarPickerOpen, setSimilarPickerOpen] = useState(false);
+  const [pickedTags, setPickedTags] = useState<string[]>([]);
+  useFavoritesCacheVersion();
   const [editFilter, setEditFilter] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [viewZoom, setViewZoom] = useState(1);
@@ -136,6 +150,15 @@ export default function Lightbox({
     }
   }
 
+  function togglePickedTag(name: string) {
+    setPickedTags((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+  }
+
+  function searchByPickedTags() {
+    if (pickedTags.length === 0) return;
+    onFindSimilar(requireQuery(pickedTags));
+  }
+
   function tagMenuActions(tag: Tag): ContextMenuAction[] {
     const isMyTag = favoriteTags.includes(tag.name);
     return [
@@ -181,6 +204,7 @@ export default function Lightbox({
     setResolvedSrc(null);
     setMainImageFailed(false);
     setEditFilter("");
+    setPickedTags([]);
     setViewZoom(1);
     setViewPan({ x: 0, y: 0 });
     getWallpaper(wallpaper.id, apiKey)
@@ -219,13 +243,13 @@ export default function Lightbox({
         >
           {!imgLoaded && (
             <img
-              src={detail.thumbs.large}
+              src={getCachedThumb(detail.id) ?? detail.thumbs.large}
               alt=""
               className="absolute inset-0 h-full w-full scale-105 object-cover opacity-60 blur-sm"
             />
           )}
           <FallbackImage
-            sources={[detail.path, detail.thumbs.original, detail.thumbs.large]}
+            sources={[...fullSources(detail), detail.thumbs.original, detail.thumbs.large]}
             alt={detail.id}
             priority
             onLoad={() => setImgLoaded(true)}
@@ -324,18 +348,77 @@ export default function Lightbox({
 
           <WallpaperActions wallpaper={detail} onToast={onToast} size="md" fill />
 
-          <button
-            onClick={findSimilar}
-            disabled={findingSimilar}
-            className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border py-2 text-sm"
-            style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="10" cy="10" r="6.5" />
-              <path d="M15 15l5 5" strokeLinecap="round" />
-            </svg>
-            {findingSimilar ? t("lightbox.findingSimilar") : t("lightbox.findSimilar")}
-          </button>
+          <div className="flex shrink-0 gap-1.5">
+            <button
+              onClick={findSimilar}
+              disabled={findingSimilar}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-sm"
+              style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="10" cy="10" r="6.5" />
+                <path d="M15 15l5 5" strokeLinecap="round" />
+              </svg>
+              {findingSimilar ? t("lightbox.findingSimilar") : t("lightbox.findSimilar")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSimilarPickerOpen((o) => !o)}
+              aria-expanded={similarPickerOpen}
+              aria-label={t("lightbox.similarSettings")}
+              title={t("lightbox.similarSettings")}
+              className="flex w-10 shrink-0 items-center justify-center rounded-lg border transition-colors"
+              style={{
+                borderColor: similarPickerOpen ? "var(--color-accent)" : "var(--color-border)",
+                color: similarPickerOpen ? "var(--color-accent)" : "var(--color-ink-muted)",
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M4 7h9M17 7h3M4 17h3M11 17h9" strokeLinecap="round" />
+                <circle cx="15" cy="7" r="2.2" />
+                <circle cx="9" cy="17" r="2.2" />
+              </svg>
+            </button>
+          </div>
+
+          {similarPickerOpen && (
+            <div className="flex shrink-0 flex-col gap-2.5 rounded-xl border p-3" style={{ borderColor: "var(--color-border)", background: "var(--color-surface)" }}>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="text-xs" style={{ color: "var(--color-ink-muted)" }}>
+                  {(detail.tags ?? []).length > 0 ? t("lightbox.similarPick") : t("lightbox.similarNoTags")}
+                </p>
+                {pickedTags.length > 0 && (
+                  <button type="button" onClick={() => setPickedTags([])} className="shrink-0 text-xs underline" style={{ color: "var(--color-ink-faint)" }}>
+                    {t("lightbox.similarClear")}
+                  </button>
+                )}
+              </div>
+              <div className="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto">
+                {(detail.tags ?? []).map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => togglePickedTag(tag.name)}
+                    aria-pressed={pickedTags.includes(tag.name)}
+                    className="chip !px-2 !py-1 !text-xs"
+                    data-active={pickedTags.includes(tag.name)}
+                  >
+                    #{tag.name}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={searchByPickedTags}
+                disabled={pickedTags.length === 0}
+                className="w-full rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-40"
+                style={{ background: "var(--gradient-accent)", color: "var(--color-accent-ink)" }}
+              >
+                {t("lightbox.similarSearch")}
+                {pickedTags.length > 0 ? ` (${pickedTags.length})` : ""}
+              </button>
+            </div>
+          )}
 
           <div className="flex shrink-0 flex-wrap gap-1.5">
             {(detail.tags ?? []).map((tag) => (

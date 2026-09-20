@@ -4,6 +4,8 @@ import SettingsModal from "./components/SettingsModal";
 import SlideshowModal from "./components/SlideshowModal";
 import WidgetsModal from "./components/WidgetsModal";
 import Toast from "./components/Toast";
+import UpdateBanner from "./components/UpdateBanner";
+import WhatsNewModal from "./components/WhatsNewModal";
 import Lightbox from "./components/Lightbox";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import Home from "./pages/Home";
@@ -19,9 +21,11 @@ import { loadSlideshowRules, saveSlideshowRules } from "./lib/slideshow";
 import { useSlideshowRunner } from "./lib/useSlideshowRunner";
 import { useFavorites } from "./lib/useFavorites";
 import { recordSearch } from "./lib/searchHistory";
-import { getViewHistory, recordView, clearViewHistory } from "./lib/viewHistory";
+import { getViewHistory, recordView, clearViewHistory, removeFromViewHistory } from "./lib/viewHistory";
+import { checkForUpdate, dismissUpdate, getDismissedUpdate, shouldShowWhatsNew, type UpdateInfo } from "./lib/updates";
+import { getVersion } from "@tauri-apps/api/app";
 import { useLang } from "./lib/LangContext";
-import { isTauri, setTrayLabels } from "./lib/tauri";
+import { isTauri, setAutostart, setTrayLabels } from "./lib/tauri";
 import { loadWidgets } from "./lib/widgets";
 import { spawnWidgetWindow, widgetWindowExists } from "./lib/widgetWindow";
 import type { Filters, Wallpaper } from "./lib/types";
@@ -48,8 +52,47 @@ function App() {
   const [activeList, setActiveList] = useState<Wallpaper[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const active = activeList[activeIndex] ?? null;
-  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites(settings.cacheFavorites);
   const { t, lang } = useLang();
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [dismissedUpdate, setDismissedUpdate] = useState<string | null>(() => getDismissedUpdate());
+  const [whatsNewVersion, setWhatsNewVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+    getVersion()
+      .then((v) => {
+        setAppVersion(v);
+        if (shouldShowWhatsNew(v)) setWhatsNewVersion(v);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function runUpdateCheck(): Promise<"available" | "latest" | "error"> {
+    if (!appVersion) return "error";
+    try {
+      const info = await checkForUpdate(appVersion);
+      setUpdate(info);
+      return info ? "available" : "latest";
+    } catch {
+      return "error";
+    }
+  }
+
+  // Quiet background check shortly after launch, then every few hours while
+  // the app sits in the tray. Turning the setting off stops the requests
+  // entirely, not just the popup.
+  useEffect(() => {
+    if (!appVersion || !settings.checkUpdates) return;
+    const first = setTimeout(() => void runUpdateCheck(), 5000);
+    const repeat = setInterval(() => void runUpdateCheck(), 6 * 60 * 60 * 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(repeat);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appVersion, settings.checkUpdates]);
 
   // Switching pages while scrolled deep into the previous one left the new
   // page's content mounting far below the fold — which then made its own
@@ -84,6 +127,11 @@ function App() {
   }
 
   useSlideshowRunner(settings.apiKey, slideshowRules);
+
+  useEffect(() => {
+    if (settings.autostart) setAutostart(true, true).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The system tray menu is native OS UI, so it can't read the React i18n
   // context directly — push the current language's labels into it whenever
@@ -174,6 +222,11 @@ function App() {
     setView("results");
   }
 
+  function handleRemoveFromHistory(id: string) {
+    removeFromViewHistory(id);
+    setViewHistoryList(getViewHistory());
+  }
+
   function handleClearHistory() {
     clearViewHistory();
     setViewHistoryList([]);
@@ -204,6 +257,8 @@ function App() {
           heroSettings={heroSettings}
           recommendationSettings={recommendationSettings}
           favoritesVersion={favorites.length}
+          favoritesCount={favorites.length}
+          onOpenFavorites={() => navigateTo("favorites")}
           isFavorite={isFavorite}
           onSelectTag={runSearch}
           onQuickSort={runSort}
@@ -218,6 +273,8 @@ function App() {
         <Results
           filters={filters}
           onFiltersChange={handleFiltersChange}
+          favoritesCount={favorites.length}
+          onOpenFavorites={() => navigateTo("favorites")}
           apiKey={settings.apiKey}
           nsfwAllowed={settings.nsfwEnabled}
           sketchyAllowed={settings.sketchyEnabled}
@@ -230,6 +287,12 @@ function App() {
 
       {view === "favorites" && (
         <Favorites
+          cacheEnabled={settings.cacheFavorites}
+          onCacheEnabledChange={(enabled) => {
+            const next = { ...settings, cacheFavorites: enabled };
+            setSettings(next);
+            saveSettings(next);
+          }}
           favorites={favorites}
           isFavorite={isFavorite}
           onOpen={openWallpaper}
@@ -245,6 +308,7 @@ function App() {
           onOpen={openWallpaper}
           onToggleFavorite={toggleFavorite}
           onClear={handleClearHistory}
+          onRemove={handleRemoveFromHistory}
           onToast={showToast}
         />
       )}
@@ -268,6 +332,8 @@ function App() {
           heroSettings={heroSettings}
           recommendationSettings={recommendationSettings}
           onClose={() => setSettingsOpen(false)}
+          onCheckUpdate={runUpdateCheck}
+          availableUpdate={update?.version ?? null}
           onSave={(next, nextHero, nextRec) => {
             setSettings(next);
             saveSettings(next);
@@ -323,6 +389,18 @@ function App() {
           onToast={showToast}
         />
       )}
+
+      {update && settings.checkUpdates && settings.updateNotifications && dismissedUpdate !== update.version && !settingsOpen && (
+        <UpdateBanner
+          update={update}
+          onDismiss={() => {
+            dismissUpdate(update.version);
+            setDismissedUpdate(update.version);
+          }}
+        />
+      )}
+
+      {whatsNewVersion && <WhatsNewModal version={whatsNewVersion} onClose={() => setWhatsNewVersion(null)} />}
 
       <Toast message={toast} />
       <ScrollToTopButton />

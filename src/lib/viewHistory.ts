@@ -32,3 +32,7 @@ export function recordView(wallpaper: Wallpaper) {
 export function clearViewHistory() {
   writeAll([]);
 }
+
+export function removeFromViewHistory(id: string) {
+  writeAll(readAll().filter((w) => w.id !== id));
+}

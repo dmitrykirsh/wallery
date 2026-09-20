@@ -12,6 +12,8 @@ import { exportAllData, importAllData } from "../lib/dataBackup";
 import { getBlockedTags, blockTag, unblockTag } from "../lib/recommendationEngine";
 import { useLang } from "../lib/LangContext";
 import { LANGUAGES } from "../lib/i18n";
+import HelpModal from "./HelpModal";
+import WhatsNewModal from "./WhatsNewModal";
 
 interface Props {
   settings: Settings;
@@ -19,6 +21,10 @@ interface Props {
   recommendationSettings: RecommendationSettings;
   onSave: (settings: Settings, heroSettings: HeroSettings, recommendationSettings: RecommendationSettings) => void;
   onClose: () => void;
+  /** Runs an update check right now, regardless of the "check for updates" toggle. */
+  onCheckUpdate: () => Promise<"available" | "latest" | "error">;
+  /** Version of a newer release the last check found, if any. */
+  availableUpdate: string | null;
 }
 
 const HERO_MODES: { key: HeroMode; label: "quick.hot" | "quick.toplist" | "quick.latest" | "quick.custom" }[] = [
@@ -57,12 +63,22 @@ function ToggleRow({ label, hint, checked, onChange }: { label: string; hint: st
   );
 }
 
-export default function SettingsModal({ settings, heroSettings, recommendationSettings, onSave, onClose }: Props) {
+export default function SettingsModal({ settings, heroSettings, recommendationSettings, onSave, onClose, onCheckUpdate, availableUpdate }: Props) {
   const [version, setVersion] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  const [checkStatus, setCheckStatus] = useState<"idle" | "checking" | "available" | "latest" | "error">("idle");
+  const [checkUpdates, setCheckUpdates] = useState(settings.checkUpdates);
+  const [updateNotifications, setUpdateNotifications] = useState(settings.updateNotifications);
   const [backupBusy, setBackupBusy] = useState(false);
   useEffect(() => {
     if (isTauri()) getVersion().then(setVersion).catch(() => {});
   }, []);
+
+  async function handleCheckNow() {
+    setCheckStatus("checking");
+    setCheckStatus(await onCheckUpdate());
+  }
 
   async function handleExportData() {
     setBackupBusy(true);
@@ -200,6 +216,17 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button type="button" onClick={() => setHelpOpen(true)} className="chip">
+            {t("settings.help")}
+          </button>
+          {version && (
+            <button type="button" onClick={() => setWhatsNewOpen(true)} className="chip">
+              {t("settings.whatsNew")}
+            </button>
+          )}
         </div>
 
         <div className="my-2 divide-y" style={{ borderColor: "var(--color-border)" }}>
@@ -404,6 +431,36 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
         />
 
         {isTauri() && (
+          <div className="my-4 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+            <h3 className="mb-1 text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
+              {t("settings.updates")}
+            </h3>
+            <div className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+              <ToggleRow label={t("settings.checkUpdates")} hint={t("settings.checkUpdatesHint")} checked={checkUpdates} onChange={setCheckUpdates} />
+              <div style={{ opacity: checkUpdates ? 1 : 0.5, pointerEvents: checkUpdates ? "auto" : "none" }} aria-disabled={!checkUpdates}>
+                <ToggleRow label={t("settings.updateNotify")} hint={t("settings.updateNotifyHint")} checked={updateNotifications} onChange={setUpdateNotifications} />
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCheckNow}
+                disabled={checkStatus === "checking"}
+                className="rounded-lg border px-3 py-1.5 text-xs"
+                style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
+              >
+                {checkStatus === "checking" ? t("settings.checking") : t("settings.checkNow")}
+              </button>
+              <span className="text-xs" role="status" style={{ color: "var(--color-ink-muted)" }}>
+                {checkStatus === "latest" && t("settings.upToDate")}
+                {checkStatus === "error" && t("settings.checkFailed")}
+                {(checkStatus === "available" || (checkStatus === "idle" && availableUpdate)) && availableUpdate && `${t("update.available")}: v${availableUpdate}`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {isTauri() && (
           <>
             <div className="my-2 border-t pt-2" style={{ borderColor: "var(--color-border)" }}>
               <ToggleRow label={t("settings.autostartToggle")} hint={t("settings.autostartHint")} checked={autostart} onChange={setAutostart} />
@@ -462,7 +519,7 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
               type="button"
               onClick={() => {
                 syncAutostart(autostart);
-                onSave({ ...settings, apiKey, nsfwEnabled, sketchyEnabled, autostart }, hero, rec);
+                onSave({ ...settings, apiKey, nsfwEnabled, sketchyEnabled, autostart, checkUpdates, updateNotifications }, hero, rec);
               }}
               className="rounded-lg px-4 py-2 text-sm font-medium"
               style={{ background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-2))", color: "var(--color-accent-ink)" }}
@@ -472,6 +529,9 @@ export default function SettingsModal({ settings, heroSettings, recommendationSe
           </div>
         </div>
       </motion.div>
+
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+      {whatsNewOpen && version && <WhatsNewModal version={version} onClose={() => setWhatsNewOpen(false)} />}
     </div>
   );
 }

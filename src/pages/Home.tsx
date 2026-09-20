@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import HeroCarousel from "../components/HeroCarousel";
 import TagCloud from "../components/TagCloud";
 import TagRowFeed from "../components/TagRowFeed";
+import ApiDownNotice from "../components/ApiDownNotice";
+import { isApiDownError } from "../lib/connectivity";
 import WallpaperRow from "../components/WallpaperRow";
 import type { ContextMenuAction } from "../components/ContextMenu";
 import { searchWallpapers } from "../lib/api";
@@ -22,6 +24,8 @@ interface Props {
   heroSettings: HeroSettings;
   recommendationSettings: RecommendationSettings;
   favoritesVersion: number;
+  favoritesCount: number;
+  onOpenFavorites: () => void;
   isFavorite: (id: string) => boolean;
   onSelectTag: (tag: string) => void;
   onQuickSort: (sorting: Sorting, topRange?: TopRange) => void;
@@ -75,6 +79,8 @@ export default function Home({
   heroSettings,
   recommendationSettings,
   favoritesVersion,
+  favoritesCount,
+  onOpenFavorites,
   isFavorite,
   onSelectTag,
   onQuickSort,
@@ -86,6 +92,10 @@ export default function Home({
   const { t } = useLang();
   const [hero, setHero] = useState<Wallpaper[]>([]);
   const [heroEmpty, setHeroEmpty] = useState(false);
+  // Set while every hero request is failing because the site itself is
+  // down (as opposed to a rate limit); cleared the moment one succeeds.
+  const [siteDownError, setSiteDownError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   // A small in-memory cache per hero config so switching Hot/Toplist/Latest
   // shows the last-seen set instantly instead of blanking the whole widget
   // while a fresh fetch is in flight — it still refreshes silently behind it.
@@ -131,7 +141,7 @@ export default function Home({
         pages.map((page) =>
           searchWallpapers(filters, apiKey, page)
             .then((res) => ({ ok: true as const, res }))
-            .catch(() => ({ ok: false as const })),
+            .catch((err) => ({ ok: false as const, err })),
         ),
       ).then((results) => {
         if (cancelled) return;
@@ -142,9 +152,13 @@ export default function Home({
         // genuinely empty result. Treating it as "nothing found" was the
         // actual bug — it should just quietly retry instead.
         if (succeeded.length === 0) {
+          const failure = results.find((r) => !r.ok);
+          const err = failure && !failure.ok ? failure.err : null;
+          if (err && isApiDownError(err)) setSiteDownError(String(err));
           retryTimer = setTimeout(attempt, 6000);
           return;
         }
+        setSiteDownError(null);
         const fresh = dedupeById(succeeded.flatMap((r) => r.data));
         heroGrowthRef.current = { key, nextPage: HERO_INITIAL_PAGES + 1, lastPage: succeeded[0].meta.last_page };
         if (fresh.length === 0) {
@@ -164,7 +178,7 @@ export default function Home({
       cancelled = true;
       clearTimeout(retryTimer);
     };
-  }, [apiKey, heroSettings]);
+  }, [apiKey, heroSettings, retryNonce]);
 
   // Keeps quietly paging further into the result set every so often, so a
   // long-running session sees a continuously widening pool instead of
@@ -227,6 +241,19 @@ export default function Home({
   }
 
   const heroLoading = hero.length === 0;
+
+  if (siteDownError && heroLoading) {
+    return (
+      <div className="py-6">
+        <ApiDownNotice
+          error={siteDownError}
+          favoritesCount={favoritesCount}
+          onOpenFavorites={onOpenFavorites}
+          onRetry={() => setRetryNonce((n) => n + 1)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="py-6">

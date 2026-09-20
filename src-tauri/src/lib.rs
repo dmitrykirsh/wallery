@@ -149,12 +149,135 @@ async fn save_edited_wallpaper(
     Ok(path.to_string_lossy().to_string())
 }
 
+// ---- Offline copy of favorites -------------------------------------------
+//
+// Every favorited wallpaper gets its thumbnail and full-size file copied to
+// `<app local data>/favorites/`, named `<id>.thumb.<ext>` / `<id>.full.<ext>`.
+// The webview reads them through the asset protocol (scope in tauri.conf.json),
+// so favorites keep working when Wallhaven itself is down; un-favoriting
+// deletes the files again.
+
+fn favorites_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    use tauri::Manager;
+    let mut dir = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| format!("Could not resolve app data directory: {e}"))?;
+    dir.push("favorites");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create favorites cache: {e}"))?;
+    Ok(dir)
+}
+
+/// Wallhaven ids are short alphanumeric strings; anything else must never
+/// reach a file name.
+fn valid_id(id: &str) -> bool {
+    !id.is_empty() && id.len() <= 32 && id.chars().all(|c| c.is_ascii_alphanumeric())
+}
+
+fn find_cached(dir: &std::path::Path, id: &str, kind: &str) -> Option<PathBuf> {
+    let prefix = format!("{id}.{kind}.");
+    std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .find(|entry| {
+            let name = entry.file_name().to_string_lossy().to_string();
+            name.starts_with(&prefix) && !name.ends_with(".part")
+        })
+        .map(|entry| entry.path())
+}
+
+fn read_cached_full(app: &tauri::AppHandle, id: &str) -> Option<(bytes::Bytes, String)> {
+    if !valid_id(id) {
+        return None;
+    }
+    let path = find_cached(&favorites_dir(app).ok()?, id, "full")?;
+    let ext = path.extension()?.to_string_lossy().to_string();
+    let data = std::fs::read(&path).ok()?;
+    Some((bytes::Bytes::from(data), ext))
+}
+
+async fn bytes_for(app: &tauri::AppHandle, id: &str, url: &str) -> Result<(bytes::Bytes, String), String> {
+    match read_cached_full(app, id) {
+        Some(cached) => Ok(cached),
+        None => download_bytes(url).await,
+    }
+}
+
+#[derive(Serialize)]
+struct CachedFavorite {
+    id: String,
+    thumb: Option<String>,
+    full: Option<String>,
+}
+
+/// Downloads a favorite's thumbnail and full-size file (whichever isn't
+/// already on disk).
+#[tauri::command]
+async fn cache_favorite(app: tauri::AppHandle, id: String, thumb_url: String, full_url: String) -> Result<(), String> {
+    if !valid_id(&id) {
+        return Err("Invalid wallpaper id".to_string());
+    }
+    let dir = favorites_dir(&app)?;
+    for (kind, url) in [("thumb", thumb_url), ("full", full_url)] {
+        if find_cached(&dir, &id, kind).is_some() {
+            continue;
+        }
+        let (bytes, ext) = download_bytes(&url).await?;
+        let tmp = dir.join(format!("{id}.{kind}.part"));
+        std::fs::write(&tmp, &bytes).map_err(|e| format!("Failed to cache image: {e}"))?;
+        std::fs::rename(&tmp, dir.join(format!("{id}.{kind}.{ext}"))).map_err(|e| format!("Failed to cache image: {e}"))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn uncache_favorite(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    if !valid_id(&id) {
+        return Ok(());
+    }
+    let dir = favorites_dir(&app)?;
+    let prefix = format!("{id}.");
+    for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
+        if entry.file_name().to_string_lossy().starts_with(&prefix) {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+    Ok(())
+}
+
+/// Everything currently cached, as absolute file paths the frontend turns
+/// into asset-protocol URLs. Half-written `.part` files are ignored.
+#[tauri::command]
+fn list_cached_favorites(app: tauri::AppHandle) -> Result<Vec<CachedFavorite>, String> {
+    let dir = favorites_dir(&app)?;
+    let mut map: HashMap<String, CachedFavorite> = HashMap::new();
+    for entry in std::fs::read_dir(&dir).map_err(|e| e.to_string())?.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let parts: Vec<&str> = name.split('.').collect();
+        if parts.len() != 3 || parts[2] == "part" {
+            continue;
+        }
+        let path = entry.path().to_string_lossy().to_string();
+        let item = map.entry(parts[0].to_string()).or_insert_with(|| CachedFavorite {
+            id: parts[0].to_string(),
+            thumb: None,
+            full: None,
+        });
+        match parts[1] {
+            "thumb" => item.thumb = Some(path),
+            "full" => item.full = Some(path),
+            _ => {}
+        }
+    }
+    Ok(map.into_values().collect())
+}
+
 /// Downloads a wallpaper and sets it as the Windows desktop background.
 /// `monitor` is a device path from `list_monitors`, or `null`/omitted for all monitors.
 /// `style` is one of: fill, fit, stretch, tile, center, span.
 #[tauri::command]
-async fn set_wallpaper(id: String, url: String, monitor: Option<String>, style: String) -> Result<(), String> {
-    let (bytes, extension) = download_bytes(&url).await?;
+async fn set_wallpaper(app: tauri::AppHandle, id: String, url: String, monitor: Option<String>, style: String) -> Result<(), String> {
+    let (bytes, extension) = bytes_for(&app, &id, &url).await?;
 
     let mut path = cache_dir()?;
     path.push(format!("{id}.{extension}"));
@@ -163,10 +286,87 @@ async fn set_wallpaper(id: String, url: String, monitor: Option<String>, style: 
     apply_wallpaper(&path, monitor.as_deref(), &style)
 }
 
+/// Downloads a wallpaper and sets it as the Windows lock screen picture.
+#[tauri::command]
+async fn set_lock_screen(app: tauri::AppHandle, id: String, url: String) -> Result<(), String> {
+    let (bytes, extension) = bytes_for(&app, &id, &url).await?;
+
+    let mut path = cache_dir()?;
+    path.push(format!("{id}-lock.{extension}"));
+    std::fs::write(&path, &bytes).map_err(|e| format!("Failed to save image: {e}"))?;
+
+    tauri::async_runtime::spawn_blocking(move || apply_lock_screen(&path))
+        .await
+        .map_err(|e| format!("Lock screen task failed: {e}"))?
+}
+
+#[cfg(target_os = "windows")]
+fn apply_lock_screen(path: &PathBuf) -> Result<(), String> {
+    use windows::core::HSTRING;
+    use windows::core::Interface;
+    use windows::Storage::{IStorageFile, StorageFile};
+    use windows::System::UserProfile::LockScreen;
+    use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_MULTITHREADED};
+
+    unsafe {
+        let init = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let result: Result<(), String> = (|| {
+            let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path.to_string_lossy().as_ref()))
+                .and_then(|op| op.get())
+                .map_err(|e| format!("Failed to open image for the lock screen: {e}"))?;
+            LockScreen::SetImageFileAsync(&file.cast::<IStorageFile>().map_err(|e| format!("Failed to open image for the lock screen: {e}"))?)
+                .and_then(|op| op.get())
+                .map_err(|e| format!("Failed to set the lock screen: {e}"))?;
+            Ok(())
+        })();
+
+        if init.is_ok() {
+            CoUninitialize();
+        }
+        result
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn apply_lock_screen(_path: &PathBuf) -> Result<(), String> {
+    Err("Setting the lock screen is only supported on Windows".to_string())
+}
+
+#[derive(Serialize)]
+struct LatestRelease {
+    tag: String,
+    url: String,
+    notes: String,
+}
+
+const RELEASES_API: &str = "https://api.github.com/repos/dmitrykirsh/wallery/releases/latest";
+
+/// Latest published GitHub release — fetched from Rust so the webview never
+/// deals with CORS or GitHub's required User-Agent.
+#[tauri::command]
+async fn fetch_latest_release() -> Result<LatestRelease, String> {
+    let response = http_client()
+        .get(RELEASES_API)
+        .header("Accept", "application/vnd.github+json")
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+        .map_err(|e| format!("Network error: {e}"))?;
+    if !response.status().is_success() {
+        return Err(format!("GitHub returned {}", response.status()));
+    }
+    let json = response
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| format!("Failed to parse release info: {e}"))?;
+    let text = |key: &str| json.get(key).and_then(|v| v.as_str()).unwrap_or_default().to_string();
+    Ok(LatestRelease { tag: text("tag_name"), url: text("html_url"), notes: text("body") })
+}
+
 /// Downloads a wallpaper into the given folder (or Pictures/Wallery by default) and returns the saved path.
 #[tauri::command]
-async fn save_wallpaper(id: String, url: String, folder: Option<String>) -> Result<String, String> {
-    let (bytes, extension) = download_bytes(&url).await?;
+async fn save_wallpaper(app: tauri::AppHandle, id: String, url: String, folder: Option<String>) -> Result<String, String> {
+    let (bytes, extension) = bytes_for(&app, &id, &url).await?;
 
     let dir = match folder {
         Some(f) => PathBuf::from(f),
@@ -341,6 +541,18 @@ pub fn run() {
     use tauri::{Manager, WindowEvent};
 
     tauri::Builder::default()
+        // A second launch (e.g. clicking the shortcut while the first copy is
+        // sitting in the tray, or a copy left over from a crash) must not start
+        // another process — each one spawned its own set of widget windows,
+        // stacking them on top of each other. It just brings the existing
+        // window forward instead.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.unminimize();
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -351,7 +563,12 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             api_get,
             set_wallpaper,
+            set_lock_screen,
             save_wallpaper,
+            cache_favorite,
+            uncache_favorite,
+            list_cached_favorites,
+            fetch_latest_release,
             save_edited_wallpaper,
             list_monitors,
             quit_app,

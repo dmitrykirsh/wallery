@@ -15,6 +15,8 @@ interface Props {
   downvoteTitle?: string;
   onOpen: (wallpaper: Wallpaper, list: Wallpaper[]) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
+  onRemove?: (wallpaper: Wallpaper) => void;
+  removeTitle?: string;
   onToast: (message: string) => void;
 }
 
@@ -28,6 +30,8 @@ export default function WallpaperGrid({
   downvoteTitle,
   onOpen,
   onToggleFavorite,
+  onRemove,
+  removeTitle,
   onToast,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -50,6 +54,8 @@ export default function WallpaperGrid({
               downvoteTitle={downvoteTitle}
               onOpen={(wallpaper) => onOpen(wallpaper, wallpapers)}
               onToggleFavorite={onToggleFavorite}
+              onRemove={onRemove}
+              removeTitle={removeTitle}
               onToast={onToast}
             />
           ))}

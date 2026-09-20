@@ -19,8 +19,9 @@ function shuffle<T>(arr: T[]): T[] {
  * the same operator its own site uses for "require this tag" filtering, so
  * the resulting query reads sensibly if the user looks at the search bar
  * afterwards (unlike, say, joining raw tag ids). */
-function requireQuery(tags: string[]): string {
-  return tags.map((t) => `+${t}`).join(" ");
+export function requireQuery(tags: string[]): string {
+  // A multi-word tag has to be quoted or it would split into separate terms.
+  return tags.map((t) => (/\s/.test(t) ? `+"${t}"` : `+${t}`)).join(" ");
 }
 
 interface Options {

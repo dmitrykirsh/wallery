@@ -89,6 +89,7 @@ html.widget-mode,
 html.widget-mode body,
 html.widget-mode #root {
   background: transparent;
+  overflow: hidden;
 }
 
 * {
@@ -150,45 +151,55 @@ body {
   border: 1px solid var(--color-border);
 }
 
-/* Themed range slider — the browser default looks like a plain OS control
-   against this glass/dark UI, so track + thumb are fully custom instead. */
+/* Themed range slider. The track is an explicit ::-webkit-slider-runnable-track
+   (without one the thumb has nothing to sit on and drifts off the line), and
+   its color is a translucent ink — NOT a surface token: modals and panels are
+   painted in surface-3 themselves, so a surface-3 track disappeared into them. */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--color-surface-3);
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
   outline: none;
   cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(239, 230, 216, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(239, 230, 216, 0.08);
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
   border-radius: 50%;
   background: var(--gradient-accent);
   border: 2px solid var(--color-ink);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   cursor: pointer;
-  margin-top: -5px;
 }
 
 input[type="range"]::-moz-range-track {
-  height: 4px;
+  height: 6px;
   border-radius: 999px;
-  background: var(--color-surface-3);
+  background: rgba(239, 230, 216, 0.22);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--color-accent);
   border: 2px solid var(--color-ink);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   cursor: pointer;
 }
 

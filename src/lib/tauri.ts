@@ -103,11 +103,14 @@ export async function setTrayLabels(show: string, quit: string): Promise<void> {
 
 /** Syncs the OS-level "launch on login" registration to match the setting —
  * a no-op if it already matches, so this is safe to call on every save. */
-export async function setAutostart(enabled: boolean): Promise<void> {
+export async function setAutostart(enabled: boolean, refresh = false): Promise<void> {
   if (!isTauri()) return;
   const { enable, disable, isEnabled } = await import("@tauri-apps/plugin-autostart");
   const currentlyEnabled = await isEnabled().catch(() => false);
-  if (enabled && !currentlyEnabled) await enable();
+  // `refresh` rewrites an existing entry too, so its command line always
+  // carries the current --autostart flag (which is what makes a login launch
+  // start hidden in the tray) even if it was registered by an older build.
+  if (enabled && (!currentlyEnabled || refresh)) await enable();
   else if (!enabled && currentlyEnabled) await disable();
 }
 
@@ -121,4 +124,48 @@ export async function fetchImageDataUrl(url: string): Promise<string> {
     throw new Error(t("error.tauriOnlyCrop"));
   }
   return await invoke<string>("fetch_image_data_url", { url });
+}
+
+/** Sets the wallpaper as the Windows lock screen picture. */
+export async function setLockScreen(id: string, url: string): Promise<void> {
+  if (!isTauri()) {
+    throw new Error(t("error.tauriOnlySet"));
+  }
+  await invoke("set_lock_screen", { id, url });
+}
+
+export interface CachedFavoriteFiles {
+  id: string;
+  thumb: string | null;
+  full: string | null;
+}
+
+export async function listCachedFavorites(): Promise<CachedFavoriteFiles[]> {
+  if (!isTauri()) return [];
+  try {
+    return await invoke<CachedFavoriteFiles[]>("list_cached_favorites");
+  } catch {
+    return [];
+  }
+}
+
+export async function cacheFavoriteFiles(id: string, thumbUrl: string, fullUrl: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("cache_favorite", { id, thumbUrl, fullUrl });
+}
+
+export async function uncacheFavoriteFiles(id: string): Promise<void> {
+  if (!isTauri()) return;
+  await invoke("uncache_favorite", { id });
+}
+
+export interface LatestRelease {
+  tag: string;
+  url: string;
+  notes: string;
+}
+
+export async function fetchLatestRelease(): Promise<LatestRelease> {
+  if (!isTauri()) throw new Error("Update check is only available in the desktop app");
+  return await invoke<LatestRelease>("fetch_latest_release");
 }

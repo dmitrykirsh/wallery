@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import FilterBar from "../components/FilterBar";
 import WallpaperGrid from "../components/WallpaperGrid";
+import ApiDownNotice from "../components/ApiDownNotice";
+import { isApiDownError } from "../lib/connectivity";
 import { searchWallpapers } from "../lib/api";
 import { dedupeById } from "../lib/dedupe";
 import { useLang } from "../lib/LangContext";
@@ -9,6 +11,8 @@ import type { Filters, Wallpaper } from "../lib/types";
 interface Props {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
+  favoritesCount: number;
+  onOpenFavorites: () => void;
   apiKey: string;
   nsfwAllowed: boolean;
   sketchyAllowed: boolean;
@@ -21,6 +25,8 @@ interface Props {
 export default function Results({
   filters,
   onFiltersChange,
+  favoritesCount,
+  onOpenFavorites,
   apiKey,
   nsfwAllowed,
   sketchyAllowed,
@@ -36,6 +42,7 @@ export default function Results({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   const requestKey = JSON.stringify(filters);
   const sentinelRef = useRef<HTMLDivElement>(null);
   // Guards against overlapping fetches for the same "next" page — from a
@@ -61,7 +68,7 @@ export default function Results({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestKey, apiKey]);
+  }, [requestKey, apiKey, retryNonce]);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,16 +142,25 @@ export default function Results({
         <FilterBar filters={filters} onChange={onFiltersChange} nsfwAllowed={nsfwAllowed} sketchyAllowed={sketchyAllowed} />
       </div>
 
-      {!loading && (
+      {!loading && !error && (
         <p className="mb-4 text-sm" style={{ color: "var(--color-ink-faint)", fontVariantNumeric: "tabular-nums" }}>
           {total.toLocaleString(lang)} {t("filter.found")}
         </p>
       )}
 
-      {error && (
-        <p className="mb-4 text-sm" style={{ color: "var(--color-accent-2)" }}>
-          {error}
-        </p>
+      {error && wallpapers.length === 0 && isApiDownError(error) ? (
+        <ApiDownNotice
+          error={error}
+          favoritesCount={favoritesCount}
+          onOpenFavorites={onOpenFavorites}
+          onRetry={() => setRetryNonce((n) => n + 1)}
+        />
+      ) : (
+        error && (
+          <p className="mb-4 text-sm" style={{ color: "var(--color-accent-2)" }}>
+            {error}
+          </p>
+        )
       )}
 
       <WallpaperGrid

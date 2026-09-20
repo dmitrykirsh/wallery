@@ -43,14 +43,48 @@ async function geocodeCity(query: string): Promise<{ name: string; lat: number; 
   }
 }
 
-async function locateByIp(): Promise<{ name: string; lat: number; lon: number } | null> {
+type Located = { name: string; lat: number; lon: number };
+
+// ipapi.co rate-limits aggressively, so a second provider backs it up.
+async function locateByIp(): Promise<Located | null> {
   try {
     const res = await fetch("https://ipapi.co/json/");
     const data = await res.json();
-    if (!data || data.error || typeof data.latitude !== "number") return null;
-    return { name: data.city, lat: data.latitude, lon: data.longitude };
+    if (data && !data.error && typeof data.latitude === "number") return { name: data.city, lat: data.latitude, lon: data.longitude };
+  } catch {
+    // fall through to the backup provider
+  }
+  try {
+    const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
+    const data = await res.json();
+    const lat = parseFloat(data?.latitude);
+    const lon = parseFloat(data?.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) return { name: data.city || data.region || "", lat, lon };
+  } catch {
+    // no luck
+  }
+  return null;
+}
+
+const CACHE_KEY = "wallery:weather-cache";
+
+/** The last successful result, so a widget that starts before the network is
+ * up (right after boot or a crash) shows the previous reading instead of
+ * nothing until the next refresh. */
+export function loadCachedWeather(): WeatherData | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as WeatherData) : null;
   } catch {
     return null;
+  }
+}
+
+function saveCachedWeather(data: WeatherData) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // ignore
   }
 }
 
@@ -69,12 +103,14 @@ export async function fetchWeather(mode: WeatherLocationMode, query: string, uni
       tempMax: Math.round(data.daily.temperature_2m_max[i + 1]),
       code: data.daily.weather_code[i + 1],
     }));
-    return {
+    const result: WeatherData = {
       temperature: Math.round(data.current.temperature_2m),
       code: data.current.weather_code,
       locationName: located.name,
       forecast,
     };
+    saveCachedWeather(result);
+    return result;
   } catch {
     return null;
   }

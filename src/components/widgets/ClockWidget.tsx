@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { backgroundCss, type ClockStyle } from "../../lib/clockStyle";
 import { formatClockDate, currentLocale } from "../../lib/clockDate";
 import { ensureGoogleFont, fontFamilyFor, FONT_OPTIONS } from "../../lib/googleFonts";
-import { fetchWeather, weatherIcon, type WeatherData } from "../../lib/weather";
+import { fetchWeather, loadCachedWeather, weatherIcon, type WeatherData } from "../../lib/weather";
 
 const WEATHER_REFRESH_MS = 20 * 60 * 1000;
+// A failed fetch (network not up yet, provider hiccup) retries soon instead
+// of leaving the widget without weather for the whole refresh period.
+const WEATHER_RETRY_MS = 30 * 1000;
 
 interface Props {
   style: ClockStyle;
@@ -67,23 +70,26 @@ function DigitalFace({ style, now }: { style: ClockStyle; now: Date }) {
     if (d.showDate) ensureGoogleFont(FONT_OPTIONS.find((f) => f.id === d.dateFontId)?.googleFont);
   }, [d.fontId, d.dateFontId, d.showDate]);
 
-  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(() => (d.showWeather ? loadCachedWeather() : null));
   useEffect(() => {
     if (!d.showWeather) {
       setWeather(null);
       return;
     }
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
     function load() {
       fetchWeather(d.weatherLocationMode, d.weatherLocationQuery, d.weatherUnit).then((w) => {
-        if (!cancelled) setWeather(w);
+        if (cancelled) return;
+        // Keep showing the previous reading if this attempt failed.
+        if (w) setWeather(w);
+        timer = setTimeout(load, w ? WEATHER_REFRESH_MS : WEATHER_RETRY_MS);
       });
     }
     load();
-    const interval = setInterval(load, WEATHER_REFRESH_MS);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      clearTimeout(timer);
     };
   }, [d.showWeather, d.weatherLocationMode, d.weatherLocationQuery, d.weatherUnit]);
 

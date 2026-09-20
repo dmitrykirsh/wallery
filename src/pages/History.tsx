@@ -8,10 +8,11 @@ interface Props {
   onOpen: (wallpaper: Wallpaper, list: Wallpaper[]) => void;
   onToggleFavorite: (wallpaper: Wallpaper) => void;
   onClear: () => void;
+  onRemove: (id: string) => void;
   onToast: (message: string) => void;
 }
 
-export default function History({ history, isFavorite, onOpen, onToggleFavorite, onClear, onToast }: Props) {
+export default function History({ history, isFavorite, onOpen, onToggleFavorite, onClear, onRemove, onToast }: Props) {
   const { t } = useLang();
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
@@ -36,6 +37,8 @@ export default function History({ history, isFavorite, onOpen, onToggleFavorite,
           isFavorite={isFavorite}
           onOpen={onOpen}
           onToggleFavorite={onToggleFavorite}
+          onRemove={(w) => onRemove(w.id)}
+          removeTitle={t("history.remove")}
           onToast={onToast}
         />
       )}

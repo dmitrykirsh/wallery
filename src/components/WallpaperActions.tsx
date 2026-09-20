@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import type { Wallpaper } from "../lib/types";
-import { setWallpaper, saveWallpaper, pickFolder, type WallpaperStyle } from "../lib/tauri";
+import { setWallpaper, setLockScreen, saveWallpaper, pickFolder, type WallpaperStyle } from "../lib/tauri";
 import { useMonitors } from "../lib/useMonitors";
 import { loadWallpaperPrefs, saveWallpaperPrefs } from "../lib/wallpaperPrefs";
 import { useLang } from "../lib/LangContext";
@@ -48,7 +48,7 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
   const [prefs, setPrefs] = useState(() => loadWallpaperPrefs());
   const [open, setOpen] = useState<"set" | "save" | null>(null);
   const [menuPos, setMenuPos] = useState<MenuPos | null>(null);
-  const [busy, setBusy] = useState<"set" | "save" | null>(null);
+  const [busy, setBusy] = useState<"set" | "save" | "lock" | null>(null);
   const [folder, setFolder] = useState<string | null>(prefs.saveFolder);
   const ref = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -74,7 +74,7 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
       return;
     }
     if (ref.current) {
-      const estHeight = which === "set" ? 60 + monitors.length * 34 + STYLES.length * 15 + 120 : 140;
+      const estHeight = which === "set" ? 60 + monitors.length * 34 + STYLES.length * 15 + 165 : 140;
       setMenuPos(computeMenuPos(ref.current, which === "set" ? 224 : 256, estHeight));
     }
     setOpen(which);
@@ -91,6 +91,19 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
     try {
       await setWallpaper(wallpaper.id, wallpaper.path, prefs.monitor, prefs.style);
       onToast(t("toast.wallpaperSet"));
+      setOpen(null);
+    } catch (err) {
+      onToast(String(err));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function applyLock() {
+    setBusy("lock");
+    try {
+      await setLockScreen(wallpaper.id, wallpaper.path);
+      onToast(t("toast.lockSet"));
       setOpen(null);
     } catch (err) {
       onToast(String(err));
@@ -204,6 +217,20 @@ export default function WallpaperActions({ wallpaper, onToast, size = "sm", fill
               style={{ background: "var(--gradient-accent)", color: "var(--color-accent-ink)" }}
             >
               {t("action.apply")}
+            </button>
+
+            <button
+              type="button"
+              onClick={applyLock}
+              disabled={busy === "lock"}
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border py-1.5 text-sm"
+              style={{ borderColor: "var(--color-border)", color: "var(--color-ink)" }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="5" y="11" width="14" height="9" rx="2" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+              </svg>
+              {busy === "lock" ? t("action.settingLock") : t("action.setLock")}
             </button>
           </motion.div>,
           document.body,
