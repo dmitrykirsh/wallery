@@ -54,6 +54,12 @@ export default function Results({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    // Drop the previous search's list and paging right away: otherwise the
+    // infinite-scroll effect could fetch "page + 1" of the *new* filters
+    // using the old page number and append it before page 1 arrives.
+    setWallpapers([]);
+    setPage(1);
+    setLastPage(1);
     searchWallpapers(filters, apiKey, 1)
       .then((res) => {
         if (cancelled) return;

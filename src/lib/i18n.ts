@@ -31,6 +31,7 @@ const dict = {
   "recommendations.upvoteHint": { ru: "Нравится — показывать больше такого", en: "Like — show more like this", es: "Me gusta: mostrar más así", fr: "J'aime — en montrer plus comme ça", de: "Gefällt mir — mehr davon zeigen", zh: "喜欢——多显示类似内容" },
   "recommendations.downvoteHint": { ru: "Не нравится — больше не показывать", en: "Dislike — don't show again", es: "No me gusta: no volver a mostrar", fr: "Je n'aime pas — ne plus montrer", de: "Gefällt mir nicht — nicht mehr zeigen", zh: "不喜欢——不再显示" },
   "recommendations.refresh": { ru: "Обновить рекомендации", en: "Refresh recommendations", es: "Actualizar recomendaciones", fr: "Actualiser les recommandations", de: "Empfehlungen aktualisieren", zh: "刷新推荐" },
+  "recommendations.mixedSort": { ru: "Подборка", en: "Mixed", es: "Mezcla", fr: "Mélange", de: "Gemischt", zh: "混合" },
 
   "widgets.title": { ru: "Виджеты", en: "Widgets", es: "Widgets", fr: "Widgets", de: "Widgets", zh: "小部件" },
   "widgets.addClock": { ru: "+ Добавить часы", en: "+ Add clock", es: "+ Añadir reloj", fr: "+ Ajouter une horloge", de: "+ Uhr hinzufügen", zh: "+ 添加时钟" },

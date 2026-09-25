@@ -4,7 +4,7 @@ import { defaultFilters } from "./filters";
 import { dedupeById } from "./dedupe";
 import { pickRecommendationTerms, pickSortAndPage, filterExcluded, filterBlockedTags, preferUnseen, recordShown } from "./recommendationEngine";
 import type { RecommendationSettings } from "./recommendationSettings";
-import type { Sorting, Wallpaper } from "./types";
+import type { Order, Sorting, TopRange, Wallpaper } from "./types";
 
 /** The part of a search Filters shape that's user-adjustable for a
  * recommendation feed — everything else (query, sorting, colors, order,
@@ -15,6 +15,14 @@ export interface RecommendationExtraFilters {
   atleast: string | null;
   ratios: string[];
   colors: string[];
+}
+
+/** A sort the user picked explicitly — replaces the per-term randomized
+ * sort, so the feed actually follows the page's sort control. */
+export interface RecommendationSort {
+  sorting: Sorting;
+  order: Order;
+  topRange: TopRange;
 }
 
 interface TermPaging {
@@ -43,6 +51,8 @@ interface Params {
   /** Bump this (e.g. favorites count) to force the term set to be
    * re-picked — favoriting something is itself a signal worth reacting to. */
   refreshKey?: unknown;
+  /** Null keeps the default mixed, randomized per-term sort. */
+  sort?: RecommendationSort | null;
 }
 
 /** Shared by the home page's "Wallery Recommendations" row and the full
@@ -52,13 +62,15 @@ interface Params {
  * merges the results. Each term is paginated independently rather than
  * ANDed into one combined query, which would both starve the total result
  * count and often return zero matches outright. */
-export function useRecommendationFeed({ apiKey, nsfwAllowed, sketchyAllowed, recommendationSettings, extraFilters, refreshKey }: Params) {
+export function useRecommendationFeed({ apiKey, nsfwAllowed, sketchyAllowed, recommendationSettings, extraFilters, refreshKey, sort = null }: Params) {
   const [terms, setTerms] = useState<string[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const pagingRef = useRef<Record<string, TermPaging>>({});
   const extraKey = JSON.stringify(extraFilters);
+  const sortKey = JSON.stringify(sort);
+  const sortParams = sort ? { order: sort.order, topRange: sort.topRange } : {};
 
   const purities = {
     // The feed's own purity filter narrows further, but never loosens —
@@ -83,10 +95,10 @@ export function useRecommendationFeed({ apiKey, nsfwAllowed, sketchyAllowed, rec
     setLoading(true);
 
     function attempt() {
-      const picks = pickedTerms.map((term) => ({ term, ...pickSortAndPage() }));
+      const picks = pickedTerms.map((term) => ({ term, ...(sort ? { sorting: sort.sorting, page: 1 } : pickSortAndPage()) }));
       Promise.all(
         picks.map(({ term, sorting, page }) =>
-          searchWallpapers({ ...defaultFilters(), query: term, categories: extraFilters.categories, atleast: extraFilters.atleast, ratios: extraFilters.ratios, colors: extraFilters.colors, purities, sorting }, apiKey, page)
+          searchWallpapers({ ...defaultFilters(), query: term, categories: extraFilters.categories, atleast: extraFilters.atleast, ratios: extraFilters.ratios, colors: extraFilters.colors, purities, sorting, ...sortParams }, apiKey, page)
             .then((res) => ({ ok: true as const, term, sorting, page, res }))
             .catch(() => ({ ok: false as const, term })),
         ),
@@ -114,7 +126,7 @@ export function useRecommendationFeed({ apiKey, nsfwAllowed, sketchyAllowed, rec
       clearTimeout(retryTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey, apiKey, nsfwAllowed, sketchyAllowed, recommendationSettings, extraKey]);
+  }, [refreshKey, apiKey, nsfwAllowed, sketchyAllowed, recommendationSettings, extraKey, sortKey]);
 
   function loadMore() {
     if (loadingMore) return;
@@ -128,7 +140,7 @@ export function useRecommendationFeed({ apiKey, nsfwAllowed, sketchyAllowed, rec
       pending.map((term) => {
         const paging = pagingRef.current[term];
         const next = paging.page + 1;
-        return searchWallpapers({ ...defaultFilters(), query: term, categories: extraFilters.categories, atleast: extraFilters.atleast, ratios: extraFilters.ratios, colors: extraFilters.colors, purities, sorting: paging.sorting }, apiKey, next)
+        return searchWallpapers({ ...defaultFilters(), query: term, categories: extraFilters.categories, atleast: extraFilters.atleast, ratios: extraFilters.ratios, colors: extraFilters.colors, purities, sorting: paging.sorting, ...sortParams }, apiKey, next)
           .then((res) => {
             pagingRef.current[term] = { ...paging, page: next, lastPage: res.meta.last_page };
             return res.data;

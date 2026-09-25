@@ -16,6 +16,10 @@ interface Props {
   onChange: (filters: Filters) => void;
   nsfwAllowed: boolean;
   sketchyAllowed: boolean;
+  /** Shown on the sort chip instead of the current sorting, with no option
+   * highlighted — for feeds that pick their own order until the user
+   * chooses one (the recommendations page). */
+  sortLabel?: string;
 }
 
 const CATEGORY_KEY: Record<Category, "filter.general" | "filter.anime" | "filter.people"> = {
@@ -104,7 +108,7 @@ function OptionPill({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllowed }: Props) {
+export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllowed, sortLabel }: Props) {
   const { t } = useLang();
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
@@ -329,19 +333,22 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
         </div>
       </Dropdown>
 
-      <Dropdown label={isHotSort ? t("quick.hot") : t(`sort.${filters.sorting}` as const)} icon={ICONS.sort}>
+      <Dropdown label={sortLabel ?? (isHotSort ? t("quick.hot") : t(`sort.${filters.sorting}` as const))} icon={ICONS.sort}>
         <p className="mb-2 px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
           {t("filter.sorting")}
         </p>
         <div className="flex max-w-[220px] flex-wrap gap-1.5">
-          <OptionPill active={isHotSort} onClick={() => onChange({ ...filters, sorting: "toplist", topRange: "1w" })}>
+          <OptionPill active={!sortLabel && isHotSort} onClick={() => onChange({ ...filters, sorting: "toplist", topRange: "1w" })}>
             {t("quick.hot")}
           </OptionPill>
           {SORTING_VALUES.map((s) => (
             <OptionPill
               key={s}
-              active={s === filters.sorting && !(s === "toplist" && isHotSort)}
-              onClick={() => onChange({ ...filters, sorting: s })}
+              active={!sortLabel && s === filters.sorting && !(s === "toplist" && isHotSort)}
+              // Hot is toplist + 1w, so picking plain Top while on Hot has to
+              // move the range off 1w — otherwise nothing changes and Hot
+              // stays selected.
+              onClick={() => onChange({ ...filters, sorting: s, ...(s === "toplist" && isHotSort ? { topRange: "1M" as const } : {}) })}
             >
               {t(`sort.${s}` as const)}
             </OptionPill>
@@ -349,7 +356,7 @@ export default function FilterBar({ filters, onChange, nsfwAllowed, sketchyAllow
         </div>
       </Dropdown>
 
-      {filters.sorting === "toplist" && !isHotSort && (
+      {!sortLabel && filters.sorting === "toplist" && !isHotSort && (
         <Dropdown label={t(`range.${filters.topRange}` as const)} icon={ICONS.period}>
           <p className="mb-2 px-0.5 text-xs font-medium uppercase tracking-wide" style={{ color: "var(--color-ink-faint)" }}>
             {t("filter.period")}

@@ -1,6 +1,7 @@
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { isTauri } from "./tauri";
+import { flushDurableStorage } from "./durableStorage";
 
 const PREFIX = "wallery:";
 const FILE_FILTER = { name: "Wallery Backup", extensions: ["json"] };
@@ -52,5 +53,8 @@ export async function importAllData(): Promise<boolean> {
   for (const [key, value] of Object.entries(parsed.data)) {
     if (key.startsWith(PREFIX)) localStorage.setItem(key, value);
   }
+  // The caller reloads next, and the saved file is what the reload restores
+  // from — it has to hold the imported data before that happens.
+  await flushDurableStorage();
   return true;
 }

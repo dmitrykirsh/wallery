@@ -27,6 +27,8 @@ interface Props {
 export default function Recommendations({ apiKey, nsfwAllowed, sketchyAllowed, recommendationSettings, isFavorite, onOpen, onToggleFavorite, onToast }: Props) {
   const { t } = useLang();
   const [filters, setFilters] = useState<Filters>(defaultFilters());
+  // The feed mixes its own sort per term until the user picks one here.
+  const [sortChosen, setSortChosen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const fetchingRef = useRef(false);
@@ -44,7 +46,13 @@ export default function Recommendations({ apiKey, nsfwAllowed, sketchyAllowed, r
       colors: filters.colors,
     },
     refreshKey: refreshTick,
+    sort: sortChosen ? { sorting: filters.sorting, order: filters.order, topRange: filters.topRange } : null,
   });
+
+  function changeFilters(next: Filters) {
+    if (next.sorting !== filters.sorting || next.order !== filters.order || next.topRange !== filters.topRange) setSortChosen(true);
+    setFilters(next);
+  }
 
   useEffect(() => {
     fetchingRef.current = loadingMore;
@@ -113,7 +121,13 @@ export default function Recommendations({ apiKey, nsfwAllowed, sketchyAllowed, r
       </div>
 
       <div className="sticky top-16 z-20 mb-5 py-2">
-        <FilterBar filters={filters} onChange={setFilters} nsfwAllowed={nsfwAllowed} sketchyAllowed={sketchyAllowed} />
+        <FilterBar
+          filters={filters}
+          onChange={changeFilters}
+          nsfwAllowed={nsfwAllowed}
+          sketchyAllowed={sketchyAllowed}
+          sortLabel={sortChosen ? undefined : t("recommendations.mixedSort")}
+        />
       </div>
 
       {loading && wallpapers.length === 0 ? (

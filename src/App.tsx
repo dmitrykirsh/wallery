@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TopBar from "./components/TopBar";
 import SettingsModal from "./components/SettingsModal";
 import SlideshowModal from "./components/SlideshowModal";
@@ -167,9 +167,13 @@ function App() {
     });
   }, [settings.nsfwEnabled, settings.sketchyEnabled]);
 
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   function showToast(message: string) {
     setToast(message);
-    setTimeout(() => setToast(null), 3000);
+    // A newer toast restarts the countdown instead of being cut short by
+    // the previous one's timer.
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
   }
 
   function toggleRecommendationTag(tag: string): boolean {

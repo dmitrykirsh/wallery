@@ -3,6 +3,22 @@ import type { Lang } from "./i18n";
 /** Release notes shown on the "what's new" screen right after an update.
  * Only ru and en are written out; every other language falls back to en. */
 const CHANGELOG: Record<string, Partial<Record<Lang, string[]>>> = {
+  "1.3.1": {
+    ru: [
+      "Избранное и все настройки больше не теряются после выхода из приложения — они дополнительно сохраняются в файл на диске.",
+      "Из «Горячего» снова можно переключиться на «Топ» и другие сортировки.",
+      "Сортировка на странице рекомендаций теперь работает; по умолчанию — «Подборка».",
+      "Колесо мыши над рядом обоев больше не блокирует прокрутку главной страницы.",
+      "Исправлены смешивание старых и новых результатов при смене фильтров и слишком раннее исчезновение уведомлений.",
+    ],
+    en: [
+      "Favorites and all settings are no longer lost after quitting — they're also saved to a file on disk.",
+      "You can switch from \"Hot\" to \"Top\" and other sort orders again.",
+      "Sorting now works on the recommendations page; the default is \"Mixed\".",
+      "The mouse wheel over a wallpaper row no longer traps scrolling on the home page.",
+      "Fixed old and new results mixing when filters change, and notifications disappearing too early.",
+    ],
+  },
   "1.3.0": {
     ru: [
       "«Найти похожие»: рядом с кнопкой появился значок настроек — выберите, по каким именно тегам искать, выбранные подсвечиваются.",

@@ -58,6 +58,11 @@ export default function WallpaperRow({
     if (!el) return;
     function onWheel(e: WheelEvent) {
       if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        // At either end of the row the wheel goes back to scrolling the
+        // page — otherwise the cursor resting on a row traps it in place.
+        const atStart = el!.scrollLeft <= 0;
+        const atEnd = el!.scrollLeft + el!.clientWidth >= el!.scrollWidth - 1;
+        if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
         e.preventDefault();
         el!.scrollLeft += e.deltaY;
         handleScroll();

@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import WidgetOverlay from "./components/widgets/WidgetOverlay";
 import { LangProvider } from "./lib/LangContext";
+import { initDurableStorage } from "./lib/durableStorage";
 import "./index.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
@@ -15,17 +16,22 @@ const widgetMatch = window.location.hash.match(/^#\/widget\/(.+)$/);
 
 if (widgetMatch) {
   document.documentElement.classList.add("widget-mode");
+  void initDurableStorage(false);
   root.render(
     <React.StrictMode>
       <WidgetOverlay id={widgetMatch[1]} />
     </React.StrictMode>,
   );
 } else {
-  root.render(
-    <React.StrictMode>
-      <LangProvider>
-        <App />
-      </LangProvider>
-    </React.StrictMode>,
+  // Saved data has to be back in localStorage before App's first render
+  // reads it (settings, favorites, language…).
+  void initDurableStorage(true).finally(() =>
+    root.render(
+      <React.StrictMode>
+        <LangProvider>
+          <App />
+        </LangProvider>
+      </React.StrictMode>,
+    ),
   );
 }

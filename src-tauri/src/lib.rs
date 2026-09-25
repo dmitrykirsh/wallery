@@ -149,6 +149,45 @@ async fn save_edited_wallpaper(
     Ok(path.to_string_lossy().to_string())
 }
 
+// ---- Durable copy of the app's localStorage -------------------------------
+//
+// WebView2 writes localStorage to disk lazily, and the app never closes its
+// webview gracefully (the window only hides to the tray; Quit and a Windows
+// shutdown end the process outright), so recent changes — a new favorite —
+// could be gone on the next launch. The frontend mirrors every `wallery:*`
+// key into this file as it changes and restores from it on startup.
+
+fn storage_file(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    use tauri::Manager;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Could not resolve app data directory: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create app data directory: {e}"))?;
+    Ok(dir.join("storage.json"))
+}
+
+#[tauri::command]
+fn storage_load(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let path = storage_file(&app)?;
+    match std::fs::read_to_string(&path) {
+        Ok(data) => Ok(Some(data)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(format!("Failed to read saved data: {e}")),
+    }
+}
+
+/// Written to a temp file first and renamed over the old one, so a crash
+/// mid-write leaves the previous copy intact rather than a truncated file.
+#[tauri::command]
+fn storage_save(app: tauri::AppHandle, data: String) -> Result<(), String> {
+    let path = storage_file(&app)?;
+    let tmp = path.with_extension("json.part");
+    std::fs::write(&tmp, data.as_bytes()).map_err(|e| format!("Failed to save data: {e}"))?;
+    std::fs::rename(&tmp, &path).map_err(|e| format!("Failed to save data: {e}"))?;
+    Ok(())
+}
+
 // ---- Offline copy of favorites -------------------------------------------
 //
 // Every favorited wallpaper gets its thumbnail and full-size file copied to
@@ -572,6 +611,8 @@ pub fn run() {
             save_edited_wallpaper,
             list_monitors,
             quit_app,
+            storage_load,
+            storage_save,
             set_tray_labels,
             fetch_image_data_url,
             send_widget_to_back
